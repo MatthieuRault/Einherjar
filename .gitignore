@@ -1,0 +1,23 @@
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+.vs/
+.vscode/
+.idea/
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+*.ipa
+*.apk
+*.bak
+
+# Crash reports
+*.dmp
+*.dmp.tmp
