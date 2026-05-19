@@ -91,10 +91,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
 	ECombatDirection CurrentCombatDirection;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	float AttackDuration = 0.8f;
+
 protected:
 	// ============================================================
 	// COMBAT — HANDLERS
-	// Functions called when the player presses input keys.
 	// ============================================================
 
 	void OnOverhead();
@@ -106,4 +108,8 @@ protected:
 	void OnDefenseRight();
 	void OnKick();
 	void OnAttackCancel();
+	void ResetCombatState();
+
+private:
+	FTimerHandle CombatStateResetTimerHandle;
 };
