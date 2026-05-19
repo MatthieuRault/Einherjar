@@ -53,6 +53,20 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		{
 			EnhancedInput->BindAction(IA_RightSlash, ETriggerEvent::Started, this, &AEinherjarCharacter::OnRightSlash);
 		}
+
+		// Defenses
+		if (IA_DefenseLeft)
+		{
+			EnhancedInput->BindAction(IA_DefenseLeft, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseLeft);
+		}
+		if (IA_DefenseCenter)
+		{
+			EnhancedInput->BindAction(IA_DefenseCenter, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseCenter);
+		}
+		if (IA_DefenseRight)
+		{
+			EnhancedInput->BindAction(IA_DefenseRight, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseRight);
+		}
 	}
 }
 
@@ -78,4 +92,19 @@ void AEinherjarCharacter::OnLeftSlash()
 void AEinherjarCharacter::OnRightSlash()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Combat: Right Slash!"));
+}
+
+void AEinherjarCharacter::OnDefenseLeft()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Combat: Defense Left!"));
+}
+
+void AEinherjarCharacter::OnDefenseCenter()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Combat: Defense Center!"));
+}
+
+void AEinherjarCharacter::OnDefenseRight()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Combat: Defense Right!"));
 }

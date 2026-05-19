@@ -47,6 +47,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
 	UInputAction* IA_RightSlash;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
+	UInputAction* IA_DefenseLeft;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
+	UInputAction* IA_DefenseCenter;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
+	UInputAction* IA_DefenseRight;
+
 protected:
 	// ============================================================
 	// COMBAT — HANDLERS
@@ -57,4 +66,7 @@ protected:
 	void OnStab();
 	void OnLeftSlash();
 	void OnRightSlash();
+	void OnDefenseLeft();
+	void OnDefenseCenter();
+	void OnDefenseRight();
 };
