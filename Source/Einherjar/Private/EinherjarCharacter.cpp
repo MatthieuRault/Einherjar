@@ -54,6 +54,15 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 			EnhancedInput->BindAction(IA_RightSlash, ETriggerEvent::Started, this, &AEinherjarCharacter::OnRightSlash);
 		}
 
+		if (IA_Kick)
+		{
+			EnhancedInput->BindAction(IA_Kick, ETriggerEvent::Started, this, &AEinherjarCharacter::OnKick);
+		}
+		if (IA_AttackCancel)
+		{
+			EnhancedInput->BindAction(IA_AttackCancel, ETriggerEvent::Started, this, &AEinherjarCharacter::OnAttackCancel);
+		}
+
 		// Defenses
 		if (IA_DefenseLeft)
 		{
@@ -92,6 +101,16 @@ void AEinherjarCharacter::OnLeftSlash()
 void AEinherjarCharacter::OnRightSlash()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Combat: Right Slash!"));
+}
+
+void AEinherjarCharacter::OnKick()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Combat: Kick!"));
+}
+
+void AEinherjarCharacter::OnAttackCancel()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Combat: Attack Cancel!"));
 }
 
 void AEinherjarCharacter::OnDefenseLeft()
