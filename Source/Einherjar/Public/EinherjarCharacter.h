@@ -9,6 +9,26 @@
 // Forward declaration to avoid including InputAction.h in the header
 class UInputAction;
 class UInputComponent;
+// Combat enum
+UENUM(BlueprintType)
+enum class ECombatDirection : uint8
+{
+	None      UMETA(DisplayName = "None"),
+	Up        UMETA(DisplayName = "Up"),
+	Down      UMETA(DisplayName = "Down"),
+	Left      UMETA(DisplayName = "Left"),
+	Right     UMETA(DisplayName = "Right"),
+	Center    UMETA(DisplayName = "Center")
+};
+
+UENUM(BlueprintType)
+enum class ECombatAction : uint8
+{
+	None         UMETA(DisplayName = "None"),
+	Attacking    UMETA(DisplayName = "Attacking"),
+	Defending    UMETA(DisplayName = "Defending"),
+	Stunned      UMETA(DisplayName = "Stunned")
+};
 
 UCLASS()
 class EINHERJAR_API AEinherjarCharacter : public ACharacter
@@ -31,8 +51,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// ============================================================
-	// COMBAT — INPUT ACTIONS
-	// These variables are assigned from the derived Blueprint.
+	// COMBAT — INPUT ACTIONS	
 	// ============================================================
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
@@ -61,6 +80,16 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
 	UInputAction* IA_AttackCancel;
+
+	// ============================================================
+	// COMBAT — STATE
+	// ============================================================
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	ECombatAction CurrentCombatAction;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	ECombatDirection CurrentCombatDirection;
 
 protected:
 	// ============================================================

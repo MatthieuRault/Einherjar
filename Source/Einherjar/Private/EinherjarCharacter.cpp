@@ -8,6 +8,8 @@
 AEinherjarCharacter::AEinherjarCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	CurrentCombatAction = ECombatAction::None;
+	CurrentCombatDirection = ECombatDirection::None;
 }
 
 // Called when the game starts or when spawned
@@ -32,50 +34,19 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	// Cast the InputComponent to EnhancedInputComponent (modern input system)
 	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// Bind the 4 directional attacks
-		// Started = triggered when the key is pressed
-		if (IA_Overhead)
-		{
-			EnhancedInput->BindAction(IA_Overhead, ETriggerEvent::Started, this, &AEinherjarCharacter::OnOverhead);
-		}
-
-		if (IA_Stab)
-		{
-			EnhancedInput->BindAction(IA_Stab, ETriggerEvent::Started, this, &AEinherjarCharacter::OnStab);
-		}
-
-		if (IA_LeftSlash)
-		{
-			EnhancedInput->BindAction(IA_LeftSlash, ETriggerEvent::Started, this, &AEinherjarCharacter::OnLeftSlash);
-		}
-
-		if (IA_RightSlash)
-		{
-			EnhancedInput->BindAction(IA_RightSlash, ETriggerEvent::Started, this, &AEinherjarCharacter::OnRightSlash);
-		}
-
-		if (IA_Kick)
-		{
-			EnhancedInput->BindAction(IA_Kick, ETriggerEvent::Started, this, &AEinherjarCharacter::OnKick);
-		}
-		if (IA_AttackCancel)
-		{
-			EnhancedInput->BindAction(IA_AttackCancel, ETriggerEvent::Started, this, &AEinherjarCharacter::OnAttackCancel);
-		}
+		// Attacks
+		if (IA_Overhead)    EnhancedInput->BindAction(IA_Overhead, ETriggerEvent::Started, this, &AEinherjarCharacter::OnOverhead);
+		if (IA_Stab)        EnhancedInput->BindAction(IA_Stab, ETriggerEvent::Started, this, &AEinherjarCharacter::OnStab);
+		if (IA_LeftSlash)   EnhancedInput->BindAction(IA_LeftSlash, ETriggerEvent::Started, this, &AEinherjarCharacter::OnLeftSlash);
+		if (IA_RightSlash)  EnhancedInput->BindAction(IA_RightSlash, ETriggerEvent::Started, this, &AEinherjarCharacter::OnRightSlash);
+		if (IA_Kick)          EnhancedInput->BindAction(IA_Kick, ETriggerEvent::Started, this, &AEinherjarCharacter::OnKick);
+		if (IA_AttackCancel)  EnhancedInput->BindAction(IA_AttackCancel, ETriggerEvent::Started, this, &AEinherjarCharacter::OnAttackCancel);
 
 		// Defenses
-		if (IA_DefenseLeft)
-		{
-			EnhancedInput->BindAction(IA_DefenseLeft, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseLeft);
-		}
-		if (IA_DefenseCenter)
-		{
-			EnhancedInput->BindAction(IA_DefenseCenter, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseCenter);
-		}
-		if (IA_DefenseRight)
-		{
-			EnhancedInput->BindAction(IA_DefenseRight, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseRight);
-		}
+		if (IA_DefenseLeft)    EnhancedInput->BindAction(IA_DefenseLeft, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseLeft);
+		if (IA_DefenseCenter)  EnhancedInput->BindAction(IA_DefenseCenter, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseCenter);
+		if (IA_DefenseRight)   EnhancedInput->BindAction(IA_DefenseRight, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseRight);
+
 	}
 }
 
@@ -83,47 +54,67 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 // COMBAT — HANDLERS
 // ============================================================
 
+// Attacks
+
 void AEinherjarCharacter::OnOverhead()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Combat: Overhead Attack!"));
+	CurrentCombatAction = ECombatAction::Attacking;
+	CurrentCombatDirection = ECombatDirection::Up;
+	UE_LOG(LogTemp, Warning, TEXT("Attack: Overhead | State: Attacking/Up"));;
 }
 
 void AEinherjarCharacter::OnStab()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Combat: Stab Attack!"));
+	CurrentCombatAction = ECombatAction::Attacking;
+	CurrentCombatDirection = ECombatDirection::Down;
+	UE_LOG(LogTemp, Warning, TEXT("Attack: Stab | State: Attacking/Down"));
 }
 
 void AEinherjarCharacter::OnLeftSlash()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Combat: Left Slash!"));
+	CurrentCombatAction = ECombatAction::Attacking;
+	CurrentCombatDirection = ECombatDirection::Left;
+	UE_LOG(LogTemp, Warning, TEXT("Attack: Left Slash | State: Attacking/Left"));
 }
 
 void AEinherjarCharacter::OnRightSlash()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Combat: Right Slash!"));
+	CurrentCombatAction = ECombatAction::Attacking;
+	CurrentCombatDirection = ECombatDirection::Right;
+	UE_LOG(LogTemp, Warning, TEXT("Attack: Right Slash | State: Attacking/Right"));
 }
 
 void AEinherjarCharacter::OnKick()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Combat: Kick!"));
+	UE_LOG(LogTemp, Warning, TEXT("Kick! (l'etat ne change pas)"));
 }
 
 void AEinherjarCharacter::OnAttackCancel()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Combat: Attack Cancel!"));
+	CurrentCombatAction = ECombatAction::None;
+	CurrentCombatDirection = ECombatDirection::None;;
+	UE_LOG(LogTemp, Warning, TEXT("Attack Cancel | State: None"));
 }
+
+// Defense
 
 void AEinherjarCharacter::OnDefenseLeft()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Combat: Defense Left!"));
+	CurrentCombatAction = ECombatAction::Defending;
+	CurrentCombatDirection = ECombatDirection::Left;
+	UE_LOG(LogTemp, Warning, TEXT("Defense: Left | State: Defending/Left"));
 }
 
 void AEinherjarCharacter::OnDefenseCenter()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Combat: Defense Center!"));
+	CurrentCombatAction = ECombatAction::Defending;
+	CurrentCombatDirection = ECombatDirection::Center;
+	UE_LOG(LogTemp, Warning, TEXT("Defense: Center | State: Defending/Center"));
 }
 
 void AEinherjarCharacter::OnDefenseRight()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Combat: Defense Right!"));
+	CurrentCombatAction = ECombatAction::Defending;
+	CurrentCombatDirection = ECombatDirection::Right;
+	UE_LOG(LogTemp, Warning, TEXT("Defense: Right | State: Defending/Right"));
 }
