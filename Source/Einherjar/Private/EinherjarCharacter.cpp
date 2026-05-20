@@ -3,6 +3,7 @@
 #include "EinherjarCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "InputAction.h"
+#include "InputActionValue.h"
 
 // Sets default values
 AEinherjarCharacter::AEinherjarCharacter()
@@ -12,26 +13,34 @@ AEinherjarCharacter::AEinherjarCharacter()
 	CurrentCombatDirection = ECombatDirection::None;
 }
 
-// Called when the game starts or when spawned
 void AEinherjarCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 	UE_LOG(LogTemp, Warning, TEXT("Einherjar Character spawned!"));
 }
 
-// Called every frame
 void AEinherjarCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (bIsTrackingAttack || bIsTrackingDefense)
+	{
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			float DeltaX = 0.0f;
+			float DeltaY = 0.0f;
+			PC->GetInputMouseDelta(DeltaX, DeltaY);
+
+			AccumulatedMouseDelta.X += DeltaX;
+			AccumulatedMouseDelta.Y += DeltaY;
+		}
+	}
 }
 
-// Called to bind input functionality
 void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	// Cast the InputComponent to EnhancedInputComponent (modern input system)
 	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		// Attacks
@@ -47,102 +56,66 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		if (IA_DefenseCenter)  EnhancedInput->BindAction(IA_DefenseCenter, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseCenter);
 		if (IA_DefenseRight)   EnhancedInput->BindAction(IA_DefenseRight, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseRight);
 
+		// Mouse-based combat
+		if (IA_MouseAttack)
+		{
+			EnhancedInput->BindAction(IA_MouseAttack, ETriggerEvent::Started, this, &AEinherjarCharacter::OnMouseAttackStarted);
+			EnhancedInput->BindAction(IA_MouseAttack, ETriggerEvent::Completed, this, &AEinherjarCharacter::OnMouseAttackReleased);
+		}
+		if (IA_MouseDefense)
+		{
+			EnhancedInput->BindAction(IA_MouseDefense, ETriggerEvent::Started, this, &AEinherjarCharacter::OnMouseDefenseStarted);
+			EnhancedInput->BindAction(IA_MouseDefense, ETriggerEvent::Completed, this, &AEinherjarCharacter::OnMouseDefenseReleased);
+		}
 	}
 }
 
 // ============================================================
-// COMBAT — HANDLERS
+// ATTACKS
 // ============================================================
-
-// Attacks
 
 void AEinherjarCharacter::OnOverhead()
 {
-	// Anti-spam
-	if (CurrentCombatAction != ECombatAction::None)
-	{
-		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Overhead: already busy (%s)"),
-			*UEnum::GetValueAsString(CurrentCombatAction));
-		return;
-	}
+	if (CurrentCombatAction != ECombatAction::None) return;
 
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Up;
-	UE_LOG(LogTemp, Warning, TEXT("Attack: Overhead | State: Attacking/Up"));;
+	UE_LOG(LogTemp, Warning, TEXT("Attack: Overhead | State: Attacking/Up"));
 
-	GetWorldTimerManager().SetTimer(
-		CombatStateResetTimerHandle,
-		this,
-		&AEinherjarCharacter::ResetCombatState,
-		AttackDuration,
-		false
-	);
+	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnStab()
 {
-	if (CurrentCombatAction != ECombatAction::None)
-	{
-		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Stab: already busy (%s)"),
-			*UEnum::GetValueAsString(CurrentCombatAction));
-		return;
-	}
+	if (CurrentCombatAction != ECombatAction::None) return;
 
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Down;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Stab | State: Attacking/Down"));
 
-	GetWorldTimerManager().SetTimer(
-		CombatStateResetTimerHandle,
-		this,
-		&AEinherjarCharacter::ResetCombatState,
-		AttackDuration,
-		false
-	);
+	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnLeftSlash()
 {
-	if (CurrentCombatAction != ECombatAction::None)
-	{
-		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Left Slash: already busy (%s)"),
-			*UEnum::GetValueAsString(CurrentCombatAction));
-		return;
-	}
+	if (CurrentCombatAction != ECombatAction::None) return;
 
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Left;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Left Slash | State: Attacking/Left"));
 
-	GetWorldTimerManager().SetTimer(
-		CombatStateResetTimerHandle,
-		this,
-		&AEinherjarCharacter::ResetCombatState,
-		AttackDuration,
-		false
-	);
+	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnRightSlash()
 {
-	if (CurrentCombatAction != ECombatAction::None)
-	{
-		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Right Slash: already busy (%s)"),
-			*UEnum::GetValueAsString(CurrentCombatAction));
-		return;
-	}
+	if (CurrentCombatAction != ECombatAction::None) return;
 
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Right;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Right Slash | State: Attacking/Right"));
 
-	GetWorldTimerManager().SetTimer(
-		CombatStateResetTimerHandle,
-		this,
-		&AEinherjarCharacter::ResetCombatState,
-		AttackDuration,
-		false
-	);
+	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnKick()
@@ -152,86 +125,110 @@ void AEinherjarCharacter::OnKick()
 
 void AEinherjarCharacter::OnAttackCancel()
 {
-	CurrentCombatAction = ECombatAction::None;
-	CurrentCombatDirection = ECombatDirection::None;;
 	UE_LOG(LogTemp, Warning, TEXT("Attack Cancel | State: None"));
 	GetWorldTimerManager().ClearTimer(CombatStateResetTimerHandle);
 	ResetCombatState();
 }
 
-// Defense
+// ============================================================
+// DEFENSES
+// ============================================================
 
 void AEinherjarCharacter::OnDefenseLeft()
 {
-	if (CurrentCombatAction != ECombatAction::None)
-	{
-		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Defense Left: already busy (%s)"),
-			*UEnum::GetValueAsString(CurrentCombatAction));
-		return;
-	}
+	if (CurrentCombatAction != ECombatAction::None) return;
 
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = ECombatDirection::Left;
 	UE_LOG(LogTemp, Warning, TEXT("Defense: Left | State: Defending/Left"));
 
-	GetWorldTimerManager().SetTimer(
-		CombatStateResetTimerHandle,
-		this,
-		&AEinherjarCharacter::ResetCombatState,
-		AttackDuration,
-		false
-	);
+	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnDefenseCenter()
 {
-	if (CurrentCombatAction != ECombatAction::None)
-	{
-		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Defense Center: already busy (%s)"),
-			*UEnum::GetValueAsString(CurrentCombatAction));
-		return;
-	}
+	if (CurrentCombatAction != ECombatAction::None) return;
 
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = ECombatDirection::Center;
 	UE_LOG(LogTemp, Warning, TEXT("Defense: Center | State: Defending/Center"));
 
-	GetWorldTimerManager().SetTimer(
-		CombatStateResetTimerHandle,
-		this,
-		&AEinherjarCharacter::ResetCombatState,
-		AttackDuration,
-		false
-	);
+	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnDefenseRight()
 {
-	if (CurrentCombatAction != ECombatAction::None)
-	{
-		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Defense Right: already busy (%s)"),
-			*UEnum::GetValueAsString(CurrentCombatAction));
-		return;
-	}
+	if (CurrentCombatAction != ECombatAction::None) return;
 
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = ECombatDirection::Right;
 	UE_LOG(LogTemp, Warning, TEXT("Defense: Right | State: Defending/Right"));
 
-	GetWorldTimerManager().SetTimer(
-		CombatStateResetTimerHandle,
-		this,
-		&AEinherjarCharacter::ResetCombatState,
-		AttackDuration,
-		false
-	);
+	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
-// Helpers
+// ============================================================
+// HELPERS
+// ============================================================
 
 void AEinherjarCharacter::ResetCombatState()
 {
 	CurrentCombatAction = ECombatAction::None;
 	CurrentCombatDirection = ECombatDirection::None;
 	UE_LOG(LogTemp, Warning, TEXT("Combat state reset to None"));
+}
+
+// ============================================================
+// MOUSE-BASED COMBAT
+// ============================================================
+
+void AEinherjarCharacter::OnMouseAttackStarted()
+{
+	bIsTrackingAttack = true;
+	AccumulatedMouseDelta = FVector2D::ZeroVector;
+}
+
+void AEinherjarCharacter::OnMouseAttackReleased()
+{
+	if (!bIsTrackingAttack) return;
+	bIsTrackingAttack = false;
+
+	const float AbsX = FMath::Abs(AccumulatedMouseDelta.X);
+	const float AbsY = FMath::Abs(AccumulatedMouseDelta.Y);
+	const float MinThreshold = 1.0f;
+
+	if (AbsX < MinThreshold && AbsY < MinThreshold)
+	{
+		return;
+	}
+
+	if (AbsY > AbsX)
+	{
+		if (AccumulatedMouseDelta.Y < 0) OnStab();
+		else                              OnOverhead();
+	}
+	else
+	{
+		if (AccumulatedMouseDelta.X < 0) OnLeftSlash();
+		else                              OnRightSlash();
+	}
+}
+
+void AEinherjarCharacter::OnMouseDefenseStarted()
+{
+	bIsTrackingDefense = true;
+	AccumulatedMouseDelta = FVector2D::ZeroVector;
+}
+
+void AEinherjarCharacter::OnMouseDefenseReleased()
+{
+	if (!bIsTrackingDefense) return;
+	bIsTrackingDefense = false;
+
+	const float AbsX = FMath::Abs(AccumulatedMouseDelta.X);
+	const float CenterThreshold = 2.0f;
+
+	if (AbsX < CenterThreshold)         OnDefenseCenter();
+	else if (AccumulatedMouseDelta.X < 0) OnDefenseLeft();
+	else                                  OnDefenseRight();
 }

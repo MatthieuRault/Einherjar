@@ -6,10 +6,11 @@
 #include "GameFramework/Character.h"
 #include "EinherjarCharacter.generated.h"
 
-// Forward declaration to avoid including InputAction.h in the header
+// Forward declaration
 class UInputAction;
 class UInputComponent;
-// Combat enum
+
+// Combat enums
 UENUM(BlueprintType)
 enum class ECombatDirection : uint8
 {
@@ -36,22 +37,17 @@ class EINHERJAR_API AEinherjarCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	AEinherjarCharacter();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind input functionality
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// ============================================================
-	// COMBAT — INPUT ACTIONS	
+	// COMBAT — INPUT ACTIONS
 	// ============================================================
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
@@ -80,6 +76,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
 	UInputAction* IA_AttackCancel;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
+	UInputAction* IA_MouseAttack;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
+	UInputAction* IA_MouseDefense;
 
 	// ============================================================
 	// COMBAT — STATE
@@ -110,6 +112,16 @@ protected:
 	void OnAttackCancel();
 	void ResetCombatState();
 
+	void OnMouseAttackStarted();
+	void OnMouseAttackReleased();
+	void OnMouseDefenseStarted();
+	void OnMouseDefenseReleased();
+
 private:
 	FTimerHandle CombatStateResetTimerHandle;
+
+	// Mouse tracking state
+	bool bIsTrackingAttack = false;
+	bool bIsTrackingDefense = false;
+	FVector2D AccumulatedMouseDelta = FVector2D::ZeroVector;
 };
