@@ -96,6 +96,32 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|State")
 	float AttackDuration = 0.8f;
 
+	// ============================================================
+	// HEALTH SYSTEM
+	// ============================================================
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Health")
+	float MaxHealth = 100.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	float CurrentHealth = 100.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	bool bIsDead = false;
+
+	// ============================================================
+	// HEALTH — BLUEPRINT-CALLABLE FUNCTIONS
+	// ============================================================
+
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void TakeDamage(float DamageAmount);
+
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void Die();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Health")
+	bool IsAlive() const;
+
 protected:
 	// ============================================================
 	// COMBAT — HANDLERS

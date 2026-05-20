@@ -11,12 +11,16 @@ AEinherjarCharacter::AEinherjarCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 	CurrentCombatAction = ECombatAction::None;
 	CurrentCombatDirection = ECombatDirection::None;
+
+	// Health initialization
+	CurrentHealth = MaxHealth;
+	bIsDead = false;
 }
 
 void AEinherjarCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("Einherjar Character spawned!"));
+	UE_LOG(LogTemp, Warning, TEXT("%s spawned with %.1f HP"), *GetName(), CurrentHealth);
 }
 
 void AEinherjarCharacter::Tick(float DeltaTime)
@@ -43,7 +47,6 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// Attacks
 		if (IA_Overhead)    EnhancedInput->BindAction(IA_Overhead, ETriggerEvent::Started, this, &AEinherjarCharacter::OnOverhead);
 		if (IA_Stab)        EnhancedInput->BindAction(IA_Stab, ETriggerEvent::Started, this, &AEinherjarCharacter::OnStab);
 		if (IA_LeftSlash)   EnhancedInput->BindAction(IA_LeftSlash, ETriggerEvent::Started, this, &AEinherjarCharacter::OnLeftSlash);
@@ -51,12 +54,10 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		if (IA_Kick)          EnhancedInput->BindAction(IA_Kick, ETriggerEvent::Started, this, &AEinherjarCharacter::OnKick);
 		if (IA_AttackCancel)  EnhancedInput->BindAction(IA_AttackCancel, ETriggerEvent::Started, this, &AEinherjarCharacter::OnAttackCancel);
 
-		// Defenses
 		if (IA_DefenseLeft)    EnhancedInput->BindAction(IA_DefenseLeft, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseLeft);
 		if (IA_DefenseCenter)  EnhancedInput->BindAction(IA_DefenseCenter, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseCenter);
 		if (IA_DefenseRight)   EnhancedInput->BindAction(IA_DefenseRight, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseRight);
 
-		// Mouse-based combat
 		if (IA_MouseAttack)
 		{
 			EnhancedInput->BindAction(IA_MouseAttack, ETriggerEvent::Started, this, &AEinherjarCharacter::OnMouseAttackStarted);
@@ -77,44 +78,36 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 void AEinherjarCharacter::OnOverhead()
 {
 	if (CurrentCombatAction != ECombatAction::None) return;
-
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Up;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Overhead | State: Attacking/Up"));
-
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnStab()
 {
 	if (CurrentCombatAction != ECombatAction::None) return;
-
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Down;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Stab | State: Attacking/Down"));
-
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnLeftSlash()
 {
 	if (CurrentCombatAction != ECombatAction::None) return;
-
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Left;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Left Slash | State: Attacking/Left"));
-
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnRightSlash()
 {
 	if (CurrentCombatAction != ECombatAction::None) return;
-
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Right;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Right Slash | State: Attacking/Right"));
-
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
@@ -137,33 +130,27 @@ void AEinherjarCharacter::OnAttackCancel()
 void AEinherjarCharacter::OnDefenseLeft()
 {
 	if (CurrentCombatAction != ECombatAction::None) return;
-
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = ECombatDirection::Left;
 	UE_LOG(LogTemp, Warning, TEXT("Defense: Left | State: Defending/Left"));
-
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnDefenseCenter()
 {
 	if (CurrentCombatAction != ECombatAction::None) return;
-
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = ECombatDirection::Center;
 	UE_LOG(LogTemp, Warning, TEXT("Defense: Center | State: Defending/Center"));
-
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 void AEinherjarCharacter::OnDefenseRight()
 {
 	if (CurrentCombatAction != ECombatAction::None) return;
-
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = ECombatDirection::Right;
 	UE_LOG(LogTemp, Warning, TEXT("Defense: Right | State: Defending/Right"));
-
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
@@ -197,10 +184,7 @@ void AEinherjarCharacter::OnMouseAttackReleased()
 	const float AbsY = FMath::Abs(AccumulatedMouseDelta.Y);
 	const float MinThreshold = 1.0f;
 
-	if (AbsX < MinThreshold && AbsY < MinThreshold)
-	{
-		return;
-	}
+	if (AbsX < MinThreshold && AbsY < MinThreshold) return;
 
 	if (AbsY > AbsX)
 	{
@@ -231,4 +215,43 @@ void AEinherjarCharacter::OnMouseDefenseReleased()
 	if (AbsX < CenterThreshold)         OnDefenseCenter();
 	else if (AccumulatedMouseDelta.X < 0) OnDefenseLeft();
 	else                                  OnDefenseRight();
+}
+
+// ============================================================
+// HEALTH SYSTEM
+// ============================================================
+
+void AEinherjarCharacter::TakeDamage(float DamageAmount)
+{
+	if (bIsDead || DamageAmount <= 0.0f) return;
+
+	CurrentHealth = FMath::Clamp(CurrentHealth - DamageAmount, 0.0f, MaxHealth);
+
+	UE_LOG(LogTemp, Warning, TEXT("%s took %.1f damage | HP: %.1f / %.1f"),
+		*GetName(), DamageAmount, CurrentHealth, MaxHealth);
+
+	if (CurrentHealth <= 0.0f)
+	{
+		Die();
+	}
+}
+
+void AEinherjarCharacter::Die()
+{
+	if (bIsDead) return;
+
+	bIsDead = true;
+	CurrentHealth = 0.0f;
+
+	UE_LOG(LogTemp, Warning, TEXT("%s died!"), *GetName());
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		DisableInput(PC);
+	}
+}
+
+bool AEinherjarCharacter::IsAlive() const
+{
+	return !bIsDead;
 }
