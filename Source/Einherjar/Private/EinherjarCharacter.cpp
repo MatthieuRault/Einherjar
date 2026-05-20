@@ -58,6 +58,14 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 void AEinherjarCharacter::OnOverhead()
 {
+	// Anti-spam
+	if (CurrentCombatAction != ECombatAction::None)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Overhead: already busy (%s)"),
+			*UEnum::GetValueAsString(CurrentCombatAction));
+		return;
+	}
+
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Up;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Overhead | State: Attacking/Up"));;
@@ -73,6 +81,13 @@ void AEinherjarCharacter::OnOverhead()
 
 void AEinherjarCharacter::OnStab()
 {
+	if (CurrentCombatAction != ECombatAction::None)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Stab: already busy (%s)"),
+			*UEnum::GetValueAsString(CurrentCombatAction));
+		return;
+	}
+
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Down;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Stab | State: Attacking/Down"));
@@ -88,6 +103,13 @@ void AEinherjarCharacter::OnStab()
 
 void AEinherjarCharacter::OnLeftSlash()
 {
+	if (CurrentCombatAction != ECombatAction::None)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Left Slash: already busy (%s)"),
+			*UEnum::GetValueAsString(CurrentCombatAction));
+		return;
+	}
+
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Left;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Left Slash | State: Attacking/Left"));
@@ -103,6 +125,13 @@ void AEinherjarCharacter::OnLeftSlash()
 
 void AEinherjarCharacter::OnRightSlash()
 {
+	if (CurrentCombatAction != ECombatAction::None)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Right Slash: already busy (%s)"),
+			*UEnum::GetValueAsString(CurrentCombatAction));
+		return;
+	}
+
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = ECombatDirection::Right;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Right Slash | State: Attacking/Right"));
@@ -134,6 +163,13 @@ void AEinherjarCharacter::OnAttackCancel()
 
 void AEinherjarCharacter::OnDefenseLeft()
 {
+	if (CurrentCombatAction != ECombatAction::None)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Defense Left: already busy (%s)"),
+			*UEnum::GetValueAsString(CurrentCombatAction));
+		return;
+	}
+
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = ECombatDirection::Left;
 	UE_LOG(LogTemp, Warning, TEXT("Defense: Left | State: Defending/Left"));
@@ -149,6 +185,13 @@ void AEinherjarCharacter::OnDefenseLeft()
 
 void AEinherjarCharacter::OnDefenseCenter()
 {
+	if (CurrentCombatAction != ECombatAction::None)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Defense Center: already busy (%s)"),
+			*UEnum::GetValueAsString(CurrentCombatAction));
+		return;
+	}
+
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = ECombatDirection::Center;
 	UE_LOG(LogTemp, Warning, TEXT("Defense: Center | State: Defending/Center"));
@@ -164,6 +207,13 @@ void AEinherjarCharacter::OnDefenseCenter()
 
 void AEinherjarCharacter::OnDefenseRight()
 {
+	if (CurrentCombatAction != ECombatAction::None)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("Cannot start Defense Right: already busy (%s)"),
+			*UEnum::GetValueAsString(CurrentCombatAction));
+		return;
+	}
+
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = ECombatDirection::Right;
 	UE_LOG(LogTemp, Warning, TEXT("Defense: Right | State: Defending/Right"));
