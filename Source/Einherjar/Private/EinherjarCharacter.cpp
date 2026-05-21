@@ -201,31 +201,40 @@ void AEinherjarCharacter::OnMouseAttackReleased()
 	const float HoldDuration = GetWorld()->GetTimeSeconds() - MouseAttackStartTime;
 	const bool bIsHeavy = HoldDuration >= HeavyAttackThreshold;
 
-	const float AbsX = FMath::Abs(AccumulatedMouseDelta.X);
-	const float AbsY = FMath::Abs(AccumulatedMouseDelta.Y);
-	const float MinThreshold = 1.0f;
-
 	ECombatDirection AttackDirection = ECombatDirection::None;
 
-	if (AbsX < MinThreshold && AbsY < MinThreshold)
+	if (PendingAttackDirection != ECombatDirection::None)
 	{
-		UE_LOG(LogTemp, Verbose, TEXT("Mouse attack released without movement, ignored"));
-		return;
-	}
-
-	if (AbsY > AbsX)
-	{
-		AttackDirection = (AccumulatedMouseDelta.Y < 0) ? ECombatDirection::Down : ECombatDirection::Up;
+		AttackDirection = PendingAttackDirection;
+		UE_LOG(LogTemp, Warning, TEXT("Mouse attack: using KEYBOARD direction (%s) | %s"),
+			*UEnum::GetValueAsString(AttackDirection),
+			bIsHeavy ? TEXT("HEAVY") : TEXT("LIGHT"));
 	}
 	else
 	{
-		AttackDirection = (AccumulatedMouseDelta.X < 0) ? ECombatDirection::Left : ECombatDirection::Right;
-	}
+		const float AbsX = FMath::Abs(AccumulatedMouseDelta.X);
+		const float AbsY = FMath::Abs(AccumulatedMouseDelta.Y);
+		const float MinThreshold = 1.0f;
 
-	UE_LOG(LogTemp, Warning, TEXT("Mouse attack: %s | Hold: %.2fs (%s)"),
-		*UEnum::GetValueAsString(AttackDirection),
-		HoldDuration,
-		bIsHeavy ? TEXT("HEAVY") : TEXT("LIGHT"));
+		if (AbsX < MinThreshold && AbsY < MinThreshold)
+		{
+			UE_LOG(LogTemp, Verbose, TEXT("Mouse attack released without direction, ignored"));
+			return;
+		}
+
+		if (AbsY > AbsX)
+		{
+			AttackDirection = (AccumulatedMouseDelta.Y < 0) ? ECombatDirection::Down : ECombatDirection::Up;
+		}
+		else
+		{
+			AttackDirection = (AccumulatedMouseDelta.X < 0) ? ECombatDirection::Left : ECombatDirection::Right;
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Mouse attack: using MOUSE direction (%s) | %s"),
+			*UEnum::GetValueAsString(AttackDirection),
+			bIsHeavy ? TEXT("HEAVY") : TEXT("LIGHT"));
+	}
 
 	ExecuteAttack(AttackDirection, bIsHeavy);
 }
@@ -241,12 +250,45 @@ void AEinherjarCharacter::OnMouseDefenseReleased()
 	if (!bIsTrackingDefense) return;
 	bIsTrackingDefense = false;
 
-	const float AbsX = FMath::Abs(AccumulatedMouseDelta.X);
-	const float CenterThreshold = 2.0f;
+	ECombatDirection DefenseDirection = ECombatDirection::None;
 
-	if (AbsX < CenterThreshold)         OnDefenseCenter();
-	else if (AccumulatedMouseDelta.X < 0) OnDefenseLeft();
-	else                                  OnDefenseRight();
+	if (PendingDefenseDirection != ECombatDirection::None)
+	{
+		DefenseDirection = PendingDefenseDirection;
+		UE_LOG(LogTemp, Warning, TEXT("Mouse defense: using KEYBOARD direction (%s)"),
+			*UEnum::GetValueAsString(DefenseDirection));
+	}
+	else
+	{
+		const float AbsX = FMath::Abs(AccumulatedMouseDelta.X);
+		const float CenterThreshold = 2.0f;
+
+		if (AbsX < CenterThreshold)
+		{
+			DefenseDirection = ECombatDirection::Center;
+		}
+		else if (AccumulatedMouseDelta.X < 0)
+		{
+			DefenseDirection = ECombatDirection::Left;
+		}
+		else
+		{
+			DefenseDirection = ECombatDirection::Right;
+		}
+
+		UE_LOG(LogTemp, Warning, TEXT("Mouse defense: using MOUSE direction (%s)"),
+			*UEnum::GetValueAsString(DefenseDirection));
+	}
+
+	if (CurrentCombatAction != ECombatAction::None) return;
+
+	CurrentCombatAction = ECombatAction::Defending;
+	CurrentCombatDirection = DefenseDirection;
+	UE_LOG(LogTemp, Warning, TEXT("Defense: %s | State: Defending/%s"),
+		*UEnum::GetValueAsString(DefenseDirection),
+		*UEnum::GetValueAsString(DefenseDirection));
+
+	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
 }
 
 // ============================================================
