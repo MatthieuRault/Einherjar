@@ -28,6 +28,7 @@ enum class ECombatAction : uint8
 	None         UMETA(DisplayName = "None"),
 	Attacking    UMETA(DisplayName = "Attacking"),
 	Defending    UMETA(DisplayName = "Defending"),
+	Recovering   UMETA(DisplayName = "Recovering"),
 	Stunned      UMETA(DisplayName = "Stunned")
 };
 
@@ -96,6 +97,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|State")
 	float AttackDuration = 0.8f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	float RecoveryDuration = 0.4f;
+
 	// ============================================================
 	// COMBAT — ATTACK PARAMETERS
 	// ============================================================
@@ -162,6 +166,7 @@ protected:
 	void OnKick();
 	void OnAttackCancel();
 	void ResetCombatState();
+	void EndRecovery();
 	void OnMouseAttackStarted();
 	void OnMouseAttackReleased();
 	void OnMouseDefenseStarted();

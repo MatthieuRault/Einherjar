@@ -127,7 +127,10 @@ void AEinherjarCharacter::OnAttackCancel()
 	UE_LOG(LogTemp, Warning, TEXT("Attack Cancel | State: None"));
 	GetWorldTimerManager().ClearTimer(CombatStateResetTimerHandle);
 	GetWorldTimerManager().ClearTimer(AttackHitTimerHandle);
-	ResetCombatState();
+
+	CurrentCombatAction = ECombatAction::None;
+	CurrentCombatDirection = ECombatDirection::None;
+	UE_LOG(LogTemp, Warning, TEXT("Combat state reset to None"));
 }
 
 // ============================================================
@@ -167,9 +170,33 @@ void AEinherjarCharacter::OnDefenseRight()
 
 void AEinherjarCharacter::ResetCombatState()
 {
+	if (CurrentCombatAction == ECombatAction::Attacking)
+	{
+		CurrentCombatAction = ECombatAction::Recovering;
+		CurrentCombatDirection = ECombatDirection::None;
+		UE_LOG(LogTemp, Warning, TEXT("Combat state: Recovering for %.2fs"), RecoveryDuration);
+
+		GetWorldTimerManager().SetTimer(
+			CombatStateResetTimerHandle,
+			this,
+			&AEinherjarCharacter::EndRecovery,
+			RecoveryDuration,
+			false
+		);
+	}
+	else
+	{
+		CurrentCombatAction = ECombatAction::None;
+		CurrentCombatDirection = ECombatDirection::None;
+		UE_LOG(LogTemp, Warning, TEXT("Combat state reset to None"));
+	}
+}
+
+void AEinherjarCharacter::EndRecovery()
+{
 	CurrentCombatAction = ECombatAction::None;
 	CurrentCombatDirection = ECombatDirection::None;
-	UE_LOG(LogTemp, Warning, TEXT("Combat state reset to None"));
+	UE_LOG(LogTemp, Warning, TEXT("Recovery done, ready to attack again"));
 }
 
 // ============================================================
