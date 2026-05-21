@@ -190,6 +190,7 @@ void AEinherjarCharacter::OnMouseAttackStarted()
 {
 	bIsTrackingAttack = true;
 	AccumulatedMouseDelta = FVector2D::ZeroVector;
+	MouseAttackStartTime = GetWorld()->GetTimeSeconds();
 }
 
 void AEinherjarCharacter::OnMouseAttackReleased()
@@ -197,22 +198,36 @@ void AEinherjarCharacter::OnMouseAttackReleased()
 	if (!bIsTrackingAttack) return;
 	bIsTrackingAttack = false;
 
+	const float HoldDuration = GetWorld()->GetTimeSeconds() - MouseAttackStartTime;
+	const bool bIsHeavy = HoldDuration >= HeavyAttackThreshold;
+
 	const float AbsX = FMath::Abs(AccumulatedMouseDelta.X);
 	const float AbsY = FMath::Abs(AccumulatedMouseDelta.Y);
 	const float MinThreshold = 1.0f;
 
-	if (AbsX < MinThreshold && AbsY < MinThreshold) return;
+	ECombatDirection AttackDirection = ECombatDirection::None;
+
+	if (AbsX < MinThreshold && AbsY < MinThreshold)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("Mouse attack released without movement, ignored"));
+		return;
+	}
 
 	if (AbsY > AbsX)
 	{
-		if (AccumulatedMouseDelta.Y < 0) OnStab();
-		else                              OnOverhead();
+		AttackDirection = (AccumulatedMouseDelta.Y < 0) ? ECombatDirection::Down : ECombatDirection::Up;
 	}
 	else
 	{
-		if (AccumulatedMouseDelta.X < 0) OnLeftSlash();
-		else                              OnRightSlash();
+		AttackDirection = (AccumulatedMouseDelta.X < 0) ? ECombatDirection::Left : ECombatDirection::Right;
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Mouse attack: %s | Hold: %.2fs (%s)"),
+		*UEnum::GetValueAsString(AttackDirection),
+		HoldDuration,
+		bIsHeavy ? TEXT("HEAVY") : TEXT("LIGHT"));
+
+	ExecuteAttack(AttackDirection, bIsHeavy);
 }
 
 void AEinherjarCharacter::OnMouseDefenseStarted()
@@ -360,8 +375,12 @@ void AEinherjarCharacter::PerformAttackTrace()
 				}
 				else
 				{
-					HitCharacter->TakeDamage(AttackDamage);
-					UE_LOG(LogTemp, Warning, TEXT("Hit: %s for %.1f damage"), *HitCharacter->GetName(), AttackDamage);
+					const float DamageToApply = bWasLastAttackHeavy ? HeavyAttackDamage : AttackDamage;
+					HitCharacter->TakeDamage(DamageToApply);
+					UE_LOG(LogTemp, Warning, TEXT("Hit (%s): %s for %.1f damage"),
+						bWasLastAttackHeavy ? TEXT("HEAVY") : TEXT("LIGHT"),
+						*HitCharacter->GetName(),
+						DamageToApply);
 				}
 			}
 		}
@@ -370,4 +389,28 @@ void AEinherjarCharacter::PerformAttackTrace()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Attack missed (no target in range)"));
 	}
+}
+
+// ============================================================
+// ATTACK EXECUTION
+// ============================================================
+
+void AEinherjarCharacter::ExecuteAttack(ECombatDirection Direction, bool bHeavy)
+{
+	if (CurrentCombatAction != ECombatAction::None) return;
+
+	CurrentCombatAction = ECombatAction::Attacking;
+	CurrentCombatDirection = Direction;
+	bWasLastAttackHeavy = bHeavy;
+
+	UE_LOG(LogTemp, Warning, TEXT("Attack: %s | %s | State: Attacking/%s"),
+		*UEnum::GetValueAsString(Direction),
+		bHeavy ? TEXT("HEAVY") : TEXT("LIGHT"),
+		*UEnum::GetValueAsString(Direction));
+
+	const float Duration = bHeavy ? AttackDuration * 1.5f : AttackDuration;
+	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, Duration, false);
+
+	const float HitDelay = bHeavy ? AttackHitDelay * 1.5f : AttackHitDelay;
+	GetWorldTimerManager().SetTimer(AttackHitTimerHandle, this, &AEinherjarCharacter::PerformAttackTrace, HitDelay, false);
 }

@@ -100,6 +100,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|State")
 	float RecoveryDuration = 0.4f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
+	float HeavyAttackThreshold = 0.4f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
+	float HeavyAttackDamage = 50.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	bool bWasLastAttackHeavy = false;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
 	ECombatDirection PendingAttackDirection;
 
@@ -179,6 +188,7 @@ protected:
 	void OnMouseDefenseReleased();
 	void PerformAttackTrace();
 	void ClearPendingDirections();
+	void ExecuteAttack(ECombatDirection Direction, bool bHeavy);
 
 private:
 	FTimerHandle CombatStateResetTimerHandle;
@@ -188,4 +198,5 @@ private:
 	bool bIsTrackingAttack = false;
 	bool bIsTrackingDefense = false;
 	FVector2D AccumulatedMouseDelta = FVector2D::ZeroVector;
+	float MouseAttackStartTime = 0.0f;
 };
