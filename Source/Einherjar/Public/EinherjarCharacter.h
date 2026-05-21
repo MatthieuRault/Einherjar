@@ -118,7 +118,7 @@ public:
 	// ============================================================
 	// COMBAT — ATTACK PARAMETERS
 	// ============================================================
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
 	float AttackHitDelay = 0.3f;
 
@@ -130,6 +130,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
 	float AttackDamage = 25.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
+	float KickStunDuration = 0.7f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
+	float KickRange = 100.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
 	bool bDrawDebugTrace = true;
@@ -209,6 +215,12 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Stamina")
 	float GetStaminaPercent() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void ApplyKnockback(FVector Direction, float Force);
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void ApplyStun(float Duration);
+
 protected:
 	// ============================================================
 	// COMBAT — HANDLERS
@@ -225,6 +237,7 @@ protected:
 	void OnAttackCancel();
 	void ResetCombatState();
 	void EndRecovery();
+	void EndStun();
 	void OnMouseAttackStarted();
 	void OnMouseAttackReleased();
 	void OnMouseDefenseStarted();
@@ -237,6 +250,7 @@ private:
 	FTimerHandle CombatStateResetTimerHandle;
 	FTimerHandle AttackHitTimerHandle;
 	FTimerHandle RespawnTimerHandle;
+	FTimerHandle StunTimerHandle;
 
 	float LastStaminaUseTime = 0.0f;
 

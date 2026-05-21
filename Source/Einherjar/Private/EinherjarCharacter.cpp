@@ -92,7 +92,7 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 }
 
 // ============================================================
-// ATTACKS
+// ATTACKS — KEYBOARD SELECTORS
 // ============================================================
 
 void AEinherjarCharacter::OnOverhead()
@@ -119,6 +119,10 @@ void AEinherjarCharacter::OnRightSlash()
 	UE_LOG(LogTemp, Warning, TEXT(">>> Pending attack: RIGHT (Right Slash)"));
 }
 
+// ============================================================
+// KICK
+// ============================================================
+
 void AEinherjarCharacter::OnKick()
 {
 	if (!ConsumeStamina(KickStaminaCost))
@@ -126,7 +130,60 @@ void AEinherjarCharacter::OnKick()
 		UE_LOG(LogTemp, Warning, TEXT("Kick failed: not enough stamina"));
 		return;
 	}
+
 	UE_LOG(LogTemp, Warning, TEXT("Kick! | Stamina: %.1f"), CurrentStamina);
+
+	const FVector StartLocation = GetActorLocation() + GetActorForwardVector() * 50.0f;
+	const FVector EndLocation = StartLocation + GetActorForwardVector() * KickRange;
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+
+	TArray<FHitResult> HitResults;
+
+	const bool bHit = UKismetSystemLibrary::SphereTraceMulti(
+		GetWorld(),
+		StartLocation,
+		EndLocation,
+		AttackRadius,
+		ETraceTypeQuery::TraceTypeQuery1,
+		false,
+		ActorsToIgnore,
+		bDrawDebugTrace ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None,
+		HitResults,
+		true,
+		FLinearColor::Blue,
+		FLinearColor::Yellow,
+		1.0f
+	);
+
+	if (!bHit)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Kick missed (no target)"));
+		return;
+	}
+
+	for (const FHitResult& Hit : HitResults)
+	{
+		AActor* HitActor = Hit.GetActor();
+		if (!HitActor) continue;
+
+		if (AEinherjarCharacter* HitCharacter = Cast<AEinherjarCharacter>(HitActor))
+		{			
+			if (HitCharacter->CurrentCombatAction == ECombatAction::Defending)
+			{				
+				HitCharacter->ApplyStun(KickStunDuration);
+
+				UE_LOG(LogTemp, Warning, TEXT("Kick BROKE %s's defense! Stunned for %.1fs"),
+					*HitCharacter->GetName(), KickStunDuration);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Kick hit %s but target wasn't blocking - no effect"),
+					*HitCharacter->GetName());
+			}
+		}
+	}
 }
 
 void AEinherjarCharacter::OnAttackCancel()
@@ -142,7 +199,7 @@ void AEinherjarCharacter::OnAttackCancel()
 }
 
 // ============================================================
-// DEFENSES
+// DEFENSES — KEYBOARD SELECTORS
 // ============================================================
 
 void AEinherjarCharacter::OnDefenseLeft()
@@ -353,6 +410,7 @@ void AEinherjarCharacter::Die()
 	{
 		DisableInput(PC);
 	}
+
 	if (bAutoRespawn)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s will respawn in %.1fs"), *GetName(), RespawnDelay);
@@ -460,7 +518,6 @@ void AEinherjarCharacter::PerformAttackTrace()
 	if (bIsDead) return;
 
 	const FVector StartLocation = GetActorLocation() + GetActorForwardVector() * 50.0f;
-
 	const FVector EndLocation = StartLocation + GetActorForwardVector() * AttackRange;
 
 	TArray<AActor*> ActorsToIgnore;
@@ -494,11 +551,11 @@ void AEinherjarCharacter::PerformAttackTrace()
 			if (!HitActor) continue;
 
 			if (AEinherjarCharacter* HitCharacter = Cast<AEinherjarCharacter>(HitActor))
-			{				
+			{
 				if (HitCharacter->CanBlockAttack(CurrentCombatDirection))
 				{
 					UE_LOG(LogTemp, Warning, TEXT("BLOCKED! %s blocked %s attack"),
-						*HitCharacter->GetName(), *UEnum::GetValueAsString(CurrentCombatDirection));					
+						*HitCharacter->GetName(), *UEnum::GetValueAsString(CurrentCombatDirection));
 				}
 				else
 				{
@@ -542,7 +599,7 @@ void AEinherjarCharacter::ExecuteAttack(ECombatDirection Direction, bool bHeavy)
 		*UEnum::GetValueAsString(Direction),
 		bHeavy ? TEXT("HEAVY") : TEXT("LIGHT"),
 		*UEnum::GetValueAsString(Direction));
-	
+
 	const float Duration = bHeavy ? AttackDuration * 1.5f : AttackDuration;
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, Duration, false);
 
@@ -550,4 +607,58 @@ void AEinherjarCharacter::ExecuteAttack(ECombatDirection Direction, bool bHeavy)
 	GetWorldTimerManager().SetTimer(AttackHitTimerHandle, this, &AEinherjarCharacter::PerformAttackTrace, HitDelay, false);
 
 	PendingAttackDirection = ECombatDirection::None;
+}
+
+// ============================================================
+// KNOCKBACK
+// ============================================================
+
+void AEinherjarCharacter::ApplyKnockback(FVector Direction, float Force)
+{
+	if (bIsDead) return;
+
+	Direction.Z = 0.3f;
+	Direction.Normalize();
+
+	const FVector LaunchVelocity = Direction * Force;
+
+	LaunchCharacter(LaunchVelocity, true, true);
+
+	UE_LOG(LogTemp, Warning, TEXT("%s knocked back with force %.1f"), *GetName(), Force);
+}
+
+// ============================================================
+// STUN
+// ============================================================
+
+void AEinherjarCharacter::ApplyStun(float Duration)
+{
+	if (bIsDead) return;
+
+	CurrentCombatAction = ECombatAction::Stunned;
+	CurrentCombatDirection = ECombatDirection::None;
+	PendingAttackDirection = ECombatDirection::None;
+	PendingDefenseDirection = ECombatDirection::None;
+
+	GetWorldTimerManager().ClearTimer(CombatStateResetTimerHandle);
+	GetWorldTimerManager().ClearTimer(AttackHitTimerHandle);
+
+	UE_LOG(LogTemp, Warning, TEXT("%s is stunned for %.1fs"), *GetName(), Duration);
+
+	GetWorldTimerManager().SetTimer(
+		StunTimerHandle,
+		this,
+		&AEinherjarCharacter::EndStun,
+		Duration,
+		false
+	);
+}
+
+void AEinherjarCharacter::EndStun()
+{
+	if (bIsDead) return;
+
+	CurrentCombatAction = ECombatAction::None;
+	CurrentCombatDirection = ECombatDirection::None;
+	UE_LOG(LogTemp, Warning, TEXT("%s recovered from stun"), *GetName());
 }
