@@ -4,6 +4,8 @@
 #include "EnhancedInputComponent.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Engine/DamageEvents.h"
 
 // Sets default values
 AEinherjarCharacter::AEinherjarCharacter()
@@ -82,6 +84,7 @@ void AEinherjarCharacter::OnOverhead()
 	CurrentCombatDirection = ECombatDirection::Up;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Overhead | State: Attacking/Up"));
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
+	GetWorldTimerManager().SetTimer(AttackHitTimerHandle, this, &AEinherjarCharacter::PerformAttackTrace, AttackHitDelay, false);
 }
 
 void AEinherjarCharacter::OnStab()
@@ -91,6 +94,7 @@ void AEinherjarCharacter::OnStab()
 	CurrentCombatDirection = ECombatDirection::Down;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Stab | State: Attacking/Down"));
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
+	GetWorldTimerManager().SetTimer(AttackHitTimerHandle, this, &AEinherjarCharacter::PerformAttackTrace, AttackHitDelay, false);
 }
 
 void AEinherjarCharacter::OnLeftSlash()
@@ -100,6 +104,7 @@ void AEinherjarCharacter::OnLeftSlash()
 	CurrentCombatDirection = ECombatDirection::Left;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Left Slash | State: Attacking/Left"));
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
+	GetWorldTimerManager().SetTimer(AttackHitTimerHandle, this, &AEinherjarCharacter::PerformAttackTrace, AttackHitDelay, false);
 }
 
 void AEinherjarCharacter::OnRightSlash()
@@ -109,6 +114,7 @@ void AEinherjarCharacter::OnRightSlash()
 	CurrentCombatDirection = ECombatDirection::Right;
 	UE_LOG(LogTemp, Warning, TEXT("Attack: Right Slash | State: Attacking/Right"));
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
+	GetWorldTimerManager().SetTimer(AttackHitTimerHandle, this, &AEinherjarCharacter::PerformAttackTrace, AttackHitDelay, false);
 }
 
 void AEinherjarCharacter::OnKick()
@@ -120,6 +126,7 @@ void AEinherjarCharacter::OnAttackCancel()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Attack Cancel | State: None"));
 	GetWorldTimerManager().ClearTimer(CombatStateResetTimerHandle);
+	GetWorldTimerManager().ClearTimer(AttackHitTimerHandle);
 	ResetCombatState();
 }
 
@@ -254,4 +261,59 @@ void AEinherjarCharacter::Die()
 bool AEinherjarCharacter::IsAlive() const
 {
 	return !bIsDead;
+}
+
+// ============================================================
+// ATTACK TRACING
+// ============================================================
+
+void AEinherjarCharacter::PerformAttackTrace()
+{
+	if (bIsDead) return;
+
+	const FVector StartLocation = GetActorLocation() + GetActorForwardVector() * 50.0f;
+
+	const FVector EndLocation = StartLocation + GetActorForwardVector() * AttackRange;
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+
+	TArray<FHitResult> HitResults;
+
+	const bool bHit = UKismetSystemLibrary::SphereTraceMulti(
+		GetWorld(),
+		StartLocation,
+		EndLocation,
+		AttackRadius,
+		ETraceTypeQuery::TraceTypeQuery1,
+		false,
+		ActorsToIgnore,
+		bDrawDebugTrace ? EDrawDebugTrace::ForDuration : EDrawDebugTrace::None,
+		HitResults,
+		true,
+		FLinearColor::Red,
+		FLinearColor::Green,
+		1.0f
+	);
+
+	if (bHit)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Trace touched %d actor(s)"), HitResults.Num());
+
+		for (const FHitResult& Hit : HitResults)
+		{
+			AActor* HitActor = Hit.GetActor();
+			if (!HitActor) continue;
+
+			if (AEinherjarCharacter* HitCharacter = Cast<AEinherjarCharacter>(HitActor))
+			{
+				HitCharacter->TakeDamage(AttackDamage);
+				UE_LOG(LogTemp, Warning, TEXT("Hit: %s for %.1f damage"), *HitCharacter->GetName(), AttackDamage);
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Attack missed (no target in range)"));
+	}
 }

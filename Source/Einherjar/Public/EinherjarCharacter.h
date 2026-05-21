@@ -97,6 +97,25 @@ public:
 	float AttackDuration = 0.8f;
 
 	// ============================================================
+	// COMBAT — ATTACK PARAMETERS
+	// ============================================================
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
+	float AttackHitDelay = 0.3f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
+	float AttackRange = 150.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
+	float AttackRadius = 60.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
+	float AttackDamage = 25.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Tracing")
+	bool bDrawDebugTrace = true;
+
+	// ============================================================
 	// HEALTH SYSTEM
 	// ============================================================
 
@@ -137,14 +156,15 @@ protected:
 	void OnKick();
 	void OnAttackCancel();
 	void ResetCombatState();
-
 	void OnMouseAttackStarted();
 	void OnMouseAttackReleased();
 	void OnMouseDefenseStarted();
 	void OnMouseDefenseReleased();
+	void PerformAttackTrace();
 
 private:
 	FTimerHandle CombatStateResetTimerHandle;
+	FTimerHandle AttackHitTimerHandle;
 
 	// Mouse tracking state
 	bool bIsTrackingAttack = false;
