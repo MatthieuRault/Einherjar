@@ -100,6 +100,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|State")
 	float RecoveryDuration = 0.4f;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	ECombatDirection PendingAttackDirection;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|State")
+	ECombatDirection PendingDefenseDirection;
+
 	// ============================================================
 	// COMBAT — ATTACK PARAMETERS
 	// ============================================================
@@ -172,6 +178,7 @@ protected:
 	void OnMouseDefenseStarted();
 	void OnMouseDefenseReleased();
 	void PerformAttackTrace();
+	void ClearPendingDirections();
 
 private:
 	FTimerHandle CombatStateResetTimerHandle;
