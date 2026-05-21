@@ -82,25 +82,25 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 void AEinherjarCharacter::OnOverhead()
 {
 	PendingAttackDirection = ECombatDirection::Up;
-	UE_LOG(LogTemp, Verbose, TEXT("Pending attack direction: Up"));
+	UE_LOG(LogTemp, Warning, TEXT(">>> Pending attack: UP (Overhead)"));
 }
 
 void AEinherjarCharacter::OnStab()
 {
 	PendingAttackDirection = ECombatDirection::Down;
-	UE_LOG(LogTemp, Verbose, TEXT("Pending attack direction: Down"));
+	UE_LOG(LogTemp, Warning, TEXT(">>> Pending attack: DOWN (Stab)"));
 }
 
 void AEinherjarCharacter::OnLeftSlash()
 {
 	PendingAttackDirection = ECombatDirection::Left;
-	UE_LOG(LogTemp, Verbose, TEXT("Pending attack direction: Left"));
+	UE_LOG(LogTemp, Warning, TEXT(">>> Pending attack: LEFT (Left Slash)"));
 }
 
 void AEinherjarCharacter::OnRightSlash()
 {
 	PendingAttackDirection = ECombatDirection::Right;
-	UE_LOG(LogTemp, Verbose, TEXT("Pending attack direction: Right"));
+	UE_LOG(LogTemp, Warning, TEXT(">>> Pending attack: RIGHT (Right Slash)"));
 }
 
 void AEinherjarCharacter::OnKick()
@@ -110,13 +110,14 @@ void AEinherjarCharacter::OnKick()
 
 void AEinherjarCharacter::OnAttackCancel()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Attack Cancel | State: None"));
+	UE_LOG(LogTemp, Warning, TEXT("Attack Cancel | clearing all state"));
 	GetWorldTimerManager().ClearTimer(CombatStateResetTimerHandle);
 	GetWorldTimerManager().ClearTimer(AttackHitTimerHandle);
 
 	CurrentCombatAction = ECombatAction::None;
 	CurrentCombatDirection = ECombatDirection::None;
-	UE_LOG(LogTemp, Warning, TEXT("Combat state reset to None"));
+
+	ClearPendingDirections();
 }
 
 // ============================================================
@@ -126,19 +127,19 @@ void AEinherjarCharacter::OnAttackCancel()
 void AEinherjarCharacter::OnDefenseLeft()
 {
 	PendingDefenseDirection = ECombatDirection::Left;
-	UE_LOG(LogTemp, Verbose, TEXT("Pending defense direction: Left"));
+	UE_LOG(LogTemp, Warning, TEXT(">>> Pending defense: LEFT"));
 }
 
 void AEinherjarCharacter::OnDefenseCenter()
 {
 	PendingDefenseDirection = ECombatDirection::Center;
-	UE_LOG(LogTemp, Verbose, TEXT("Pending defense direction: Center"));
+	UE_LOG(LogTemp, Warning, TEXT(">>> Pending defense: CENTER"));
 }
 
 void AEinherjarCharacter::OnDefenseRight()
 {
 	PendingDefenseDirection = ECombatDirection::Right;
-	UE_LOG(LogTemp, Verbose, TEXT("Pending defense direction: Right"));
+	UE_LOG(LogTemp, Warning, TEXT(">>> Pending defense: RIGHT"));
 }
 
 // ============================================================
@@ -289,6 +290,7 @@ void AEinherjarCharacter::OnMouseDefenseReleased()
 		*UEnum::GetValueAsString(DefenseDirection));
 
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
+	PendingDefenseDirection = ECombatDirection::None;
 }
 
 // ============================================================
@@ -455,4 +457,5 @@ void AEinherjarCharacter::ExecuteAttack(ECombatDirection Direction, bool bHeavy)
 
 	const float HitDelay = bHeavy ? AttackHitDelay * 1.5f : AttackHitDelay;
 	GetWorldTimerManager().SetTimer(AttackHitTimerHandle, this, &AEinherjarCharacter::PerformAttackTrace, HitDelay, false);
+	PendingAttackDirection = ECombatDirection::None;
 }
