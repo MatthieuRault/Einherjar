@@ -154,7 +154,35 @@ public:
 	float RespawnDelay = 3.0f;
 
 	// ============================================================
-	// HEALTH — BLUEPRINT-CALLABLE FUNCTIONS
+	// STAMINA SYSTEM
+	// ============================================================
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float MaxStamina = 100.0f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float CurrentStamina = 100.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float StaminaRegenRate = 15.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float StaminaRegenDelay = 0.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float LightAttackStaminaCost = 15.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float HeavyAttackStaminaCost = 30.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float DefenseStaminaCost = 10.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stamina")
+	float KickStaminaCost = 20.0f;
+
+	// ============================================================
+	// HEALTH & STAMINA — BLUEPRINT-CALLABLE FUNCTIONS
 	// ============================================================
 
 	UFUNCTION(BlueprintCallable, Category = "Health")
@@ -174,6 +202,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Combat|Defense")
 	void SetForceDefense(ECombatDirection DefenseDirection);
+
+	UFUNCTION(BlueprintCallable, Category = "Stamina")
+	bool ConsumeStamina(float Amount);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Stamina")
+	float GetStaminaPercent() const;
 
 protected:
 	// ============================================================
@@ -203,6 +237,8 @@ private:
 	FTimerHandle CombatStateResetTimerHandle;
 	FTimerHandle AttackHitTimerHandle;
 	FTimerHandle RespawnTimerHandle;
+
+	float LastStaminaUseTime = 0.0f;
 
 	// Mouse tracking state
 	bool bIsTrackingAttack = false;

@@ -19,6 +19,9 @@ AEinherjarCharacter::AEinherjarCharacter()
 	// Health initialization
 	CurrentHealth = MaxHealth;
 	bIsDead = false;
+
+	// Stamina initialization
+	CurrentStamina = MaxStamina;
 }
 
 void AEinherjarCharacter::BeginPlay()
@@ -41,6 +44,19 @@ void AEinherjarCharacter::Tick(float DeltaTime)
 
 			AccumulatedMouseDelta.X += DeltaX;
 			AccumulatedMouseDelta.Y += DeltaY;
+		}
+	}
+
+	if (!bIsDead && CurrentStamina < MaxStamina)
+	{
+		const float TimeSinceLastUse = GetWorld()->GetTimeSeconds() - LastStaminaUseTime;
+		if (TimeSinceLastUse >= StaminaRegenDelay)
+		{
+			CurrentStamina = FMath::Clamp(
+				CurrentStamina + StaminaRegenRate * DeltaTime,
+				0.0f,
+				MaxStamina
+			);
 		}
 	}
 }
@@ -105,7 +121,12 @@ void AEinherjarCharacter::OnRightSlash()
 
 void AEinherjarCharacter::OnKick()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Kick! (l'etat ne change pas)"));
+	if (!ConsumeStamina(KickStaminaCost))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Kick failed: not enough stamina"));
+		return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Kick! | Stamina: %.1f"), CurrentStamina);
 }
 
 void AEinherjarCharacter::OnAttackCancel()
@@ -283,6 +304,13 @@ void AEinherjarCharacter::OnMouseDefenseReleased()
 
 	if (CurrentCombatAction != ECombatAction::None) return;
 
+	if (!ConsumeStamina(DefenseStaminaCost))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Defense failed: not enough stamina"));
+		PendingDefenseDirection = ECombatDirection::None;
+		return;
+	}
+
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = DefenseDirection;
 	UE_LOG(LogTemp, Warning, TEXT("Defense: %s | State: Defending/%s"),
@@ -349,6 +377,7 @@ void AEinherjarCharacter::Respawn()
 
 	bIsDead = false;
 	CurrentHealth = MaxHealth;
+	CurrentStamina = MaxStamina;
 	CurrentCombatAction = ECombatAction::None;
 	CurrentCombatDirection = ECombatDirection::None;
 	PendingAttackDirection = ECombatDirection::None;
@@ -360,6 +389,30 @@ void AEinherjarCharacter::Respawn()
 	{
 		EnableInput(PC);
 	}
+}
+
+// ============================================================
+// STAMINA SYSTEM
+// ============================================================
+
+bool AEinherjarCharacter::ConsumeStamina(float Amount)
+{
+	if (CurrentStamina < Amount)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Not enough stamina! (%.1f / %.1f needed)"), CurrentStamina, Amount);
+		return false;
+	}
+
+	CurrentStamina = FMath::Clamp(CurrentStamina - Amount, 0.0f, MaxStamina);
+	LastStaminaUseTime = GetWorld()->GetTimeSeconds();
+
+	UE_LOG(LogTemp, Warning, TEXT("Stamina: -%.1f | %.1f / %.1f"), Amount, CurrentStamina, MaxStamina);
+	return true;
+}
+
+float AEinherjarCharacter::GetStaminaPercent() const
+{
+	return (MaxStamina > 0.0f) ? (CurrentStamina / MaxStamina) : 0.0f;
 }
 
 // ============================================================
@@ -473,6 +526,14 @@ void AEinherjarCharacter::ExecuteAttack(ECombatDirection Direction, bool bHeavy)
 {
 	if (CurrentCombatAction != ECombatAction::None) return;
 
+	const float Cost = bHeavy ? HeavyAttackStaminaCost : LightAttackStaminaCost;
+	if (!ConsumeStamina(Cost))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Attack failed: not enough stamina (%.1f needed, %.1f available)"),
+			Cost, CurrentStamina);
+		return;
+	}
+
 	CurrentCombatAction = ECombatAction::Attacking;
 	CurrentCombatDirection = Direction;
 	bWasLastAttackHeavy = bHeavy;
@@ -481,11 +542,12 @@ void AEinherjarCharacter::ExecuteAttack(ECombatDirection Direction, bool bHeavy)
 		*UEnum::GetValueAsString(Direction),
 		bHeavy ? TEXT("HEAVY") : TEXT("LIGHT"),
 		*UEnum::GetValueAsString(Direction));
-
+	
 	const float Duration = bHeavy ? AttackDuration * 1.5f : AttackDuration;
 	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, Duration, false);
 
 	const float HitDelay = bHeavy ? AttackHitDelay * 1.5f : AttackHitDelay;
 	GetWorldTimerManager().SetTimer(AttackHitTimerHandle, this, &AEinherjarCharacter::PerformAttackTrace, HitDelay, false);
+
 	PendingAttackDirection = ECombatDirection::None;
 }
