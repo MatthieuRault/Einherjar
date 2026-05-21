@@ -147,6 +147,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
 	bool bIsDead = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Health")
+	bool bAutoRespawn = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Health")
+	float RespawnDelay = 3.0f;
+
 	// ============================================================
 	// HEALTH — BLUEPRINT-CALLABLE FUNCTIONS
 	// ============================================================
@@ -159,6 +165,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Health")
 	bool IsAlive() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void Respawn();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Combat|Defense")
 	bool CanBlockAttack(ECombatDirection IncomingDirection) const;
@@ -193,6 +202,7 @@ protected:
 private:
 	FTimerHandle CombatStateResetTimerHandle;
 	FTimerHandle AttackHitTimerHandle;
+	FTimerHandle RespawnTimerHandle;
 
 	// Mouse tracking state
 	bool bIsTrackingAttack = false;

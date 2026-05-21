@@ -325,11 +325,41 @@ void AEinherjarCharacter::Die()
 	{
 		DisableInput(PC);
 	}
+	if (bAutoRespawn)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s will respawn in %.1fs"), *GetName(), RespawnDelay);
+		GetWorldTimerManager().SetTimer(
+			RespawnTimerHandle,
+			this,
+			&AEinherjarCharacter::Respawn,
+			RespawnDelay,
+			false
+		);
+	}
 }
 
 bool AEinherjarCharacter::IsAlive() const
 {
 	return !bIsDead;
+}
+
+void AEinherjarCharacter::Respawn()
+{
+	if (!bIsDead) return;
+
+	bIsDead = false;
+	CurrentHealth = MaxHealth;
+	CurrentCombatAction = ECombatAction::None;
+	CurrentCombatDirection = ECombatDirection::None;
+	PendingAttackDirection = ECombatDirection::None;
+	PendingDefenseDirection = ECombatDirection::None;
+
+	UE_LOG(LogTemp, Warning, TEXT("%s respawned with %.1f HP"), *GetName(), CurrentHealth);
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		EnableInput(PC);
+	}
 }
 
 // ============================================================
