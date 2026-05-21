@@ -141,6 +141,12 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Health")
 	bool IsAlive() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Combat|Defense")
+	bool CanBlockAttack(ECombatDirection IncomingDirection) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Combat|Defense")
+	void SetForceDefense(ECombatDirection DefenseDirection);
+
 protected:
 	// ============================================================
 	// COMBAT — HANDLERS

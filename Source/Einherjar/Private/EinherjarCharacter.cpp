@@ -264,6 +264,42 @@ bool AEinherjarCharacter::IsAlive() const
 }
 
 // ============================================================
+// DEFENSE LOGIC
+// ============================================================
+
+bool AEinherjarCharacter::CanBlockAttack(ECombatDirection IncomingDirection) const
+{
+	if (CurrentCombatAction != ECombatAction::Defending) return false;
+
+	switch (CurrentCombatDirection)
+	{
+	case ECombatDirection::Left:
+		return IncomingDirection == ECombatDirection::Left;
+
+	case ECombatDirection::Right:
+		return IncomingDirection == ECombatDirection::Right;
+
+	case ECombatDirection::Center:
+		return IncomingDirection == ECombatDirection::Up
+			|| IncomingDirection == ECombatDirection::Down;
+
+	default:
+		return false;
+	}
+}
+
+void AEinherjarCharacter::SetForceDefense(ECombatDirection DefenseDirection)
+{
+	CurrentCombatAction = ECombatAction::Defending;
+	CurrentCombatDirection = DefenseDirection;
+
+	GetWorldTimerManager().ClearTimer(CombatStateResetTimerHandle);
+
+	UE_LOG(LogTemp, Warning, TEXT("%s forced defense: %s"),
+		*GetName(), *UEnum::GetValueAsString(DefenseDirection));
+}
+
+// ============================================================
 // ATTACK TRACING
 // ============================================================
 
@@ -306,9 +342,17 @@ void AEinherjarCharacter::PerformAttackTrace()
 			if (!HitActor) continue;
 
 			if (AEinherjarCharacter* HitCharacter = Cast<AEinherjarCharacter>(HitActor))
-			{
-				HitCharacter->TakeDamage(AttackDamage);
-				UE_LOG(LogTemp, Warning, TEXT("Hit: %s for %.1f damage"), *HitCharacter->GetName(), AttackDamage);
+			{				
+				if (HitCharacter->CanBlockAttack(CurrentCombatDirection))
+				{
+					UE_LOG(LogTemp, Warning, TEXT("BLOCKED! %s blocked %s attack"),
+						*HitCharacter->GetName(), *UEnum::GetValueAsString(CurrentCombatDirection));					
+				}
+				else
+				{
+					HitCharacter->TakeDamage(AttackDamage);
+					UE_LOG(LogTemp, Warning, TEXT("Hit: %s for %.1f damage"), *HitCharacter->GetName(), AttackDamage);
+				}
 			}
 		}
 	}
