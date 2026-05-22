@@ -28,6 +28,11 @@ void AEinherjarCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Warning, TEXT("%s spawned with %.1f HP"), *GetName(), CurrentHealth);
+	
+	if (bIsAIControlled)
+	{
+		AIScheduleNextDecision();
+	}
 }
 
 void AEinherjarCharacter::Tick(float DeltaTime)
@@ -453,7 +458,9 @@ void AEinherjarCharacter::Die()
 {
 	if (bIsDead) return;
 
-	bIsDead = true;
+	bIsDead = true;	
+	GetWorldTimerManager().ClearTimer(AIDecisionTimerHandle);
+	GetWorldTimerManager().ClearTimer(AIBlockTimerHandle);
 	CurrentHealth = 0.0f;
 
 	UE_LOG(LogTemp, Warning, TEXT("%s died!"), *GetName());
@@ -496,6 +503,11 @@ void AEinherjarCharacter::Respawn()
 	bIsHoldingMouseDefense = false;
 
 	UE_LOG(LogTemp, Warning, TEXT("%s respawned with %.1f HP"), *GetName(), CurrentHealth);
+
+	if (bIsAIControlled)
+	{
+		AIScheduleNextDecision();
+	}
 
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
@@ -717,4 +729,95 @@ void AEinherjarCharacter::EndStun()
 	CurrentCombatAction = ECombatAction::None;
 	CurrentCombatDirection = ECombatDirection::None;
 	UE_LOG(LogTemp, Warning, TEXT("%s recovered from stun"), *GetName());
+}
+
+// ============================================================
+// AI SYSTEM
+// ============================================================
+
+void AEinherjarCharacter::AIScheduleNextDecision()
+{
+	if (bIsDead || !bIsAIControlled) return;
+
+	const float Delay = FMath::RandRange(AIDecisionIntervalMin, AIDecisionIntervalMax);
+
+	GetWorldTimerManager().SetTimer(
+		AIDecisionTimerHandle,
+		this,
+		&AEinherjarCharacter::AIMakeDecision,
+		Delay,
+		false
+	);
+}
+
+void AEinherjarCharacter::AIMakeDecision()
+{
+	if (bIsDead || !bIsAIControlled)
+	{
+		return;
+	}
+	
+	if (CurrentCombatAction != ECombatAction::None)
+	{
+		AIScheduleNextDecision();
+		return;
+	}
+	
+	const int32 DirRoll = FMath::RandRange(0, 3);
+	ECombatDirection RandomDir = ECombatDirection::Up;
+	switch (DirRoll)
+	{
+	case 0: RandomDir = ECombatDirection::Up; break;
+	case 1: RandomDir = ECombatDirection::Down; break;
+	case 2: RandomDir = ECombatDirection::Left; break;
+	case 3: RandomDir = ECombatDirection::Right; break;
+	}
+	
+	const float Roll = FMath::FRand();
+
+	if (Roll < AIAttackChance)
+	{		
+		const bool bHeavy = FMath::FRand() > 0.7f;
+		UE_LOG(LogTemp, Warning, TEXT("[AI] %s decides to ATTACK %s (%s)"),
+			*GetName(),
+			*UEnum::GetValueAsString(RandomDir),
+			bHeavy ? TEXT("HEAVY") : TEXT("LIGHT"));
+		ExecuteAttack(RandomDir, bHeavy);
+	}
+	else
+	{		
+		ECombatDirection DefenseDir = RandomDir;		
+		if (DefenseDir == ECombatDirection::Up || DefenseDir == ECombatDirection::Down)
+		{
+			DefenseDir = ECombatDirection::Center;
+		}
+
+		if (ConsumeStamina(DefenseStaminaCost))
+		{
+			CurrentCombatAction = ECombatAction::Defending;
+			CurrentCombatDirection = DefenseDir;
+			UE_LOG(LogTemp, Warning, TEXT("[AI] %s decides to DEFEND %s"),
+				*GetName(), *UEnum::GetValueAsString(DefenseDir));
+					
+			GetWorldTimerManager().SetTimer(
+				AIBlockTimerHandle,
+				this,
+				&AEinherjarCharacter::AIStopBlocking,
+				AIBlockDuration,
+				false
+			);
+		}
+	}
+
+	AIScheduleNextDecision();
+}
+
+void AEinherjarCharacter::AIStopBlocking()
+{	
+	if (CurrentCombatAction == ECombatAction::Defending)
+	{
+		CurrentCombatAction = ECombatAction::None;
+		CurrentCombatDirection = ECombatDirection::None;
+		UE_LOG(LogTemp, Warning, TEXT("[AI] %s stops blocking"), *GetName());
+	}
 }

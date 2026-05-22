@@ -188,6 +188,25 @@ public:
 	float KickStaminaCost = 20.0f;
 
 	// ============================================================
+	// AI SYSTEM
+	// ============================================================
+		
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	bool bIsAIControlled = false;
+		
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	float AIDecisionIntervalMin = 1.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	float AIDecisionIntervalMax = 3.0f;
+		
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	float AIAttackChance = 0.6f;
+		
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	float AIBlockDuration = 1.5f;
+
+	// ============================================================
 	// HEALTH & STAMINA — BLUEPRINT-CALLABLE FUNCTIONS
 	// ============================================================
 
@@ -247,13 +266,18 @@ protected:
 	void OnMouseDefenseReleased();	
 	void ClearPendingDirections();
 	void ExecuteAttack(ECombatDirection Direction, bool bHeavy);
-	void StopDefending();
+	void StopDefending();	
+	void AIMakeDecision();	
+	void AIScheduleNextDecision();
+	void AIStopBlocking();
 
 private:
 	FTimerHandle CombatStateResetTimerHandle;
 	FTimerHandle AttackHitTimerHandle;
 	FTimerHandle RespawnTimerHandle;
 	FTimerHandle StunTimerHandle;
+	FTimerHandle AIDecisionTimerHandle;
+	FTimerHandle AIBlockTimerHandle;
 
 	bool bIsHoldingKeyboardDefense = false;
 
