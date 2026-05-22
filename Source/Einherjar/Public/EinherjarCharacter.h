@@ -206,6 +206,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
 	float AIBlockDuration = 1.5f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	float AIRotationSpeed = 8.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	float AIEngageRange = 400.0f;
+
 	// ============================================================
 	// HEALTH & STAMINA — BLUEPRINT-CALLABLE FUNCTIONS
 	// ============================================================

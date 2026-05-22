@@ -6,6 +6,7 @@
 #include "InputActionValue.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Engine/DamageEvents.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AEinherjarCharacter::AEinherjarCharacter()
@@ -74,6 +75,32 @@ void AEinherjarCharacter::Tick(float DeltaTime)
 			{				
 				CurrentCombatDirection = ECombatDirection::Center;
 			}			
+		}
+	}
+
+	if (bIsAIControlled && !bIsDead
+		&& CurrentCombatAction != ECombatAction::Stunned
+		&& CurrentCombatAction != ECombatAction::Attacking)
+	{
+		if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+		{
+			const FVector ToPlayer = PlayerPawn->GetActorLocation() - GetActorLocation();
+			const float DistanceToPlayer = ToPlayer.Size();
+
+			if (DistanceToPlayer <= AIEngageRange)
+			{
+				FRotator TargetRotation = ToPlayer.Rotation();
+				TargetRotation.Pitch = 0.0f;
+				TargetRotation.Roll = 0.0f;
+
+				const FRotator NewRotation = FMath::RInterpTo(
+					GetActorRotation(),
+					TargetRotation,
+					DeltaTime,
+					AIRotationSpeed
+				);
+				SetActorRotation(NewRotation);
+			}
 		}
 	}
 	
@@ -617,7 +644,16 @@ void AEinherjarCharacter::PerformAttackTrace()
 			if (!HitActor) continue;
 
 			if (AEinherjarCharacter* HitCharacter = Cast<AEinherjarCharacter>(HitActor))
-			{
+			{				
+				const FVector ToTarget = (HitCharacter->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+				const FVector Forward = GetActorForwardVector();
+				const float DotProduct = FVector::DotProduct(Forward, ToTarget);
+				
+				if (DotProduct < 0.3f)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("Target %s is behind/beside, attack misses"), *HitCharacter->GetName());
+					continue;
+				}
 				if (HitCharacter->CanBlockAttack(CurrentCombatDirection))
 				{
 					UE_LOG(LogTemp, Warning, TEXT("BLOCKED! %s blocked %s attack"),
@@ -761,6 +797,16 @@ void AEinherjarCharacter::AIMakeDecision()
 	{
 		AIScheduleNextDecision();
 		return;
+	}
+	
+	if (APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+	{
+		const float DistanceToPlayer = (PlayerPawn->GetActorLocation() - GetActorLocation()).Size();
+		if (DistanceToPlayer > AIEngageRange)
+		{
+			AIScheduleNextDecision();
+			return;
+		}
 	}
 	
 	const int32 DirRoll = FMath::RandRange(0, 3);
