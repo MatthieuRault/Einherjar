@@ -33,8 +33,8 @@ void AEinherjarCharacter::BeginPlay()
 void AEinherjarCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	if (bIsTrackingAttack || bIsTrackingDefense)
+	
+	if (bIsTrackingAttack)
 	{
 		if (APlayerController* PC = Cast<APlayerController>(GetController()))
 		{
@@ -46,7 +46,32 @@ void AEinherjarCharacter::Tick(float DeltaTime)
 			AccumulatedMouseDelta.Y += DeltaY;
 		}
 	}
+	
+	if (bIsHoldingMouseDefense && !bIsHoldingKeyboardDefense && CurrentCombatAction == ECombatAction::Defending)
+	{
+		if (APlayerController* PC = Cast<APlayerController>(GetController()))
+		{
+			float DeltaX = 0.0f;
+			float DeltaY = 0.0f;
+			PC->GetInputMouseDelta(DeltaX, DeltaY);
+			
+			const float DirThreshold = 1.5f;
 
+			if (DeltaX < -DirThreshold)
+			{
+				CurrentCombatDirection = ECombatDirection::Left;
+			}
+			else if (DeltaX > DirThreshold)
+			{
+				CurrentCombatDirection = ECombatDirection::Right;
+			}
+			else if (FMath::Abs(DeltaY) > DirThreshold)
+			{				
+				CurrentCombatDirection = ECombatDirection::Center;
+			}			
+		}
+	}
+	
 	if (!bIsDead && CurrentStamina < MaxStamina)
 	{
 		const float TimeSinceLastUse = GetWorld()->GetTimeSeconds() - LastStaminaUseTime;
@@ -74,9 +99,21 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		if (IA_Kick)          EnhancedInput->BindAction(IA_Kick, ETriggerEvent::Started, this, &AEinherjarCharacter::OnKick);
 		if (IA_AttackCancel)  EnhancedInput->BindAction(IA_AttackCancel, ETriggerEvent::Started, this, &AEinherjarCharacter::OnAttackCancel);
 
-		if (IA_DefenseLeft)    EnhancedInput->BindAction(IA_DefenseLeft, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseLeft);
-		if (IA_DefenseCenter)  EnhancedInput->BindAction(IA_DefenseCenter, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseCenter);
-		if (IA_DefenseRight)   EnhancedInput->BindAction(IA_DefenseRight, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseRight);
+		if (IA_DefenseLeft)
+		{
+			EnhancedInput->BindAction(IA_DefenseLeft, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseLeft);
+			EnhancedInput->BindAction(IA_DefenseLeft, ETriggerEvent::Completed, this, &AEinherjarCharacter::StopDefending);
+		}
+		if (IA_DefenseCenter)
+		{
+			EnhancedInput->BindAction(IA_DefenseCenter, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseCenter);
+			EnhancedInput->BindAction(IA_DefenseCenter, ETriggerEvent::Completed, this, &AEinherjarCharacter::StopDefending);
+		}
+		if (IA_DefenseRight)
+		{
+			EnhancedInput->BindAction(IA_DefenseRight, ETriggerEvent::Started, this, &AEinherjarCharacter::OnDefenseRight);
+			EnhancedInput->BindAction(IA_DefenseRight, ETriggerEvent::Completed, this, &AEinherjarCharacter::StopDefending);
+		}
 
 		if (IA_MouseAttack)
 		{
@@ -169,9 +206,9 @@ void AEinherjarCharacter::OnKick()
 		if (!HitActor) continue;
 
 		if (AEinherjarCharacter* HitCharacter = Cast<AEinherjarCharacter>(HitActor))
-		{			
+		{
 			if (HitCharacter->CurrentCombatAction == ECombatAction::Defending)
-			{				
+			{
 				HitCharacter->ApplyStun(KickStunDuration);
 
 				UE_LOG(LogTemp, Warning, TEXT("Kick BROKE %s's defense! Stunned for %.1fs"),
@@ -199,25 +236,55 @@ void AEinherjarCharacter::OnAttackCancel()
 }
 
 // ============================================================
-// DEFENSES — KEYBOARD SELECTORS
+// DEFENSES — HELD (KEYBOARD)
 // ============================================================
 
 void AEinherjarCharacter::OnDefenseLeft()
 {
-	PendingDefenseDirection = ECombatDirection::Left;
-	UE_LOG(LogTemp, Warning, TEXT(">>> Pending defense: LEFT"));
+	if (CurrentCombatAction != ECombatAction::None && CurrentCombatAction != ECombatAction::Defending) return;
+
+	if (!ConsumeStamina(DefenseStaminaCost))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Defense failed: not enough stamina"));
+		return;
+	}
+
+	bIsHoldingKeyboardDefense = true;
+	CurrentCombatAction = ECombatAction::Defending;
+	CurrentCombatDirection = ECombatDirection::Left;
+	UE_LOG(LogTemp, Warning, TEXT("Defense HELD: Left"));
 }
 
 void AEinherjarCharacter::OnDefenseCenter()
 {
-	PendingDefenseDirection = ECombatDirection::Center;
-	UE_LOG(LogTemp, Warning, TEXT(">>> Pending defense: CENTER"));
+	if (CurrentCombatAction != ECombatAction::None && CurrentCombatAction != ECombatAction::Defending) return;
+
+	if (!ConsumeStamina(DefenseStaminaCost))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Defense failed: not enough stamina"));
+		return;
+	}
+
+	bIsHoldingKeyboardDefense = true;
+	CurrentCombatAction = ECombatAction::Defending;
+	CurrentCombatDirection = ECombatDirection::Center;
+	UE_LOG(LogTemp, Warning, TEXT("Defense HELD: Center"));
 }
 
 void AEinherjarCharacter::OnDefenseRight()
 {
-	PendingDefenseDirection = ECombatDirection::Right;
-	UE_LOG(LogTemp, Warning, TEXT(">>> Pending defense: RIGHT"));
+	if (CurrentCombatAction != ECombatAction::None && CurrentCombatAction != ECombatAction::Defending) return;
+
+	if (!ConsumeStamina(DefenseStaminaCost))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Defense failed: not enough stamina"));
+		return;
+	}
+
+	bIsHoldingKeyboardDefense = true;
+	CurrentCombatAction = ECombatAction::Defending;
+	CurrentCombatDirection = ECombatDirection::Right;
+	UE_LOG(LogTemp, Warning, TEXT("Defense HELD: Right"));
 }
 
 // ============================================================
@@ -259,6 +326,17 @@ void AEinherjarCharacter::ClearPendingDirections()
 {
 	PendingAttackDirection = ECombatDirection::None;
 	PendingDefenseDirection = ECombatDirection::None;
+}
+
+void AEinherjarCharacter::StopDefending()
+{
+	if (CurrentCombatAction == ECombatAction::Defending)
+	{
+		CurrentCombatAction = ECombatAction::None;
+		CurrentCombatDirection = ECombatDirection::None;
+		UE_LOG(LogTemp, Warning, TEXT("Defense released"));
+	}
+	bIsHoldingKeyboardDefense = false;
 }
 
 // ============================================================
@@ -320,62 +398,36 @@ void AEinherjarCharacter::OnMouseAttackReleased()
 
 void AEinherjarCharacter::OnMouseDefenseStarted()
 {
-	bIsTrackingDefense = true;
-	AccumulatedMouseDelta = FVector2D::ZeroVector;
-}
-
-void AEinherjarCharacter::OnMouseDefenseReleased()
-{
-	if (!bIsTrackingDefense) return;
-	bIsTrackingDefense = false;
-
-	ECombatDirection DefenseDirection = ECombatDirection::None;
-
-	if (PendingDefenseDirection != ECombatDirection::None)
-	{
-		DefenseDirection = PendingDefenseDirection;
-		UE_LOG(LogTemp, Warning, TEXT("Mouse defense: using KEYBOARD direction (%s)"),
-			*UEnum::GetValueAsString(DefenseDirection));
-	}
-	else
-	{
-		const float AbsX = FMath::Abs(AccumulatedMouseDelta.X);
-		const float CenterThreshold = 2.0f;
-
-		if (AbsX < CenterThreshold)
-		{
-			DefenseDirection = ECombatDirection::Center;
-		}
-		else if (AccumulatedMouseDelta.X < 0)
-		{
-			DefenseDirection = ECombatDirection::Left;
-		}
-		else
-		{
-			DefenseDirection = ECombatDirection::Right;
-		}
-
-		UE_LOG(LogTemp, Warning, TEXT("Mouse defense: using MOUSE direction (%s)"),
-			*UEnum::GetValueAsString(DefenseDirection));
-	}
-
-	if (CurrentCombatAction != ECombatAction::None) return;
+	if (CurrentCombatAction != ECombatAction::None && CurrentCombatAction != ECombatAction::Defending) return;
 
 	if (!ConsumeStamina(DefenseStaminaCost))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Defense failed: not enough stamina"));
-		PendingDefenseDirection = ECombatDirection::None;
 		return;
 	}
 
+	ECombatDirection DefenseDirection = ECombatDirection::Center;
+	if (PendingDefenseDirection != ECombatDirection::None)
+	{
+		DefenseDirection = PendingDefenseDirection;
+	}
+
+	bIsHoldingMouseDefense = true;
 	CurrentCombatAction = ECombatAction::Defending;
 	CurrentCombatDirection = DefenseDirection;
-	UE_LOG(LogTemp, Warning, TEXT("Defense: %s | State: Defending/%s"),
-		*UEnum::GetValueAsString(DefenseDirection),
-		*UEnum::GetValueAsString(DefenseDirection));
+	UE_LOG(LogTemp, Warning, TEXT("Mouse defense HELD (start): %s"), *UEnum::GetValueAsString(DefenseDirection));
+}
 
-	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, AttackDuration, false);
-	PendingDefenseDirection = ECombatDirection::None;
+void AEinherjarCharacter::OnMouseDefenseReleased()
+{
+	bIsHoldingMouseDefense = false;
+
+	if (CurrentCombatAction == ECombatAction::Defending && !bIsHoldingKeyboardDefense)
+	{
+		CurrentCombatAction = ECombatAction::None;
+		CurrentCombatDirection = ECombatDirection::None;
+		UE_LOG(LogTemp, Warning, TEXT("Mouse defense released"));
+	}
 }
 
 // ============================================================
@@ -440,6 +492,8 @@ void AEinherjarCharacter::Respawn()
 	CurrentCombatDirection = ECombatDirection::None;
 	PendingAttackDirection = ECombatDirection::None;
 	PendingDefenseDirection = ECombatDirection::None;
+	bIsHoldingKeyboardDefense = false;
+	bIsHoldingMouseDefense = false;
 
 	UE_LOG(LogTemp, Warning, TEXT("%s respawned with %.1f HP"), *GetName(), CurrentHealth);
 
@@ -639,6 +693,8 @@ void AEinherjarCharacter::ApplyStun(float Duration)
 	CurrentCombatDirection = ECombatDirection::None;
 	PendingAttackDirection = ECombatDirection::None;
 	PendingDefenseDirection = ECombatDirection::None;
+	bIsHoldingKeyboardDefense = false;
+	bIsHoldingMouseDefense = false;
 
 	GetWorldTimerManager().ClearTimer(CombatStateResetTimerHandle);
 	GetWorldTimerManager().ClearTimer(AttackHitTimerHandle);

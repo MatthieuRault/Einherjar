@@ -221,6 +221,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void ApplyStun(float Duration);
 
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void PerformAttackTrace();
+
 protected:
 	// ============================================================
 	// COMBAT — HANDLERS
@@ -241,10 +244,10 @@ protected:
 	void OnMouseAttackStarted();
 	void OnMouseAttackReleased();
 	void OnMouseDefenseStarted();
-	void OnMouseDefenseReleased();
-	void PerformAttackTrace();
+	void OnMouseDefenseReleased();	
 	void ClearPendingDirections();
 	void ExecuteAttack(ECombatDirection Direction, bool bHeavy);
+	void StopDefending();
 
 private:
 	FTimerHandle CombatStateResetTimerHandle;
@@ -252,11 +255,14 @@ private:
 	FTimerHandle RespawnTimerHandle;
 	FTimerHandle StunTimerHandle;
 
+	bool bIsHoldingKeyboardDefense = false;
+
 	float LastStaminaUseTime = 0.0f;
 
 	// Mouse tracking state
 	bool bIsTrackingAttack = false;
 	bool bIsTrackingDefense = false;
+	bool bIsHoldingMouseDefense = false;
 	FVector2D AccumulatedMouseDelta = FVector2D::ZeroVector;
 	float MouseAttackStartTime = 0.0f;
 };
