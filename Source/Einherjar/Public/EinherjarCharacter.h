@@ -84,6 +84,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
 	UInputAction* IA_MouseDefense;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
+	UInputAction* IA_ToggleWeapon;
+
 	// ============================================================
 	// COMBAT — STATE
 	// ============================================================
@@ -276,6 +279,7 @@ protected:
 	void AIMakeDecision();	
 	void AIScheduleNextDecision();
 	void AIStopBlocking();
+	void OnToggleWeapon();
 
 private:
 	FTimerHandle CombatStateResetTimerHandle;
@@ -289,10 +293,19 @@ private:
 
 	float LastStaminaUseTime = 0.0f;
 
+	UPROPERTY()
+	class UStaticMeshComponent* CachedWeaponMesh = nullptr;
+
+	UPROPERTY()
+	class UStaticMeshComponent* CachedShieldMesh = nullptr;
+
 	// Mouse tracking state
 	bool bIsTrackingAttack = false;
 	bool bIsTrackingDefense = false;
 	bool bIsHoldingMouseDefense = false;
 	FVector2D AccumulatedMouseDelta = FVector2D::ZeroVector;
 	float MouseAttackStartTime = 0.0f;
+
+	bool bWeaponDrawn = true;
+
 };

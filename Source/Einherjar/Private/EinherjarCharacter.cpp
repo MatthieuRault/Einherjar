@@ -7,6 +7,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Engine/DamageEvents.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/StaticMeshComponent.h"
 
 // Sets default values
 AEinherjarCharacter::AEinherjarCharacter()
@@ -29,6 +30,20 @@ void AEinherjarCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	UE_LOG(LogTemp, Warning, TEXT("%s spawned with %.1f HP"), *GetName(), CurrentHealth);
+	
+	TArray<UStaticMeshComponent*> StaticMeshes;
+	GetComponents<UStaticMeshComponent>(StaticMeshes);
+	for (UStaticMeshComponent* MeshComp : StaticMeshes)
+	{
+		if (MeshComp->GetName() == TEXT("WeaponMesh"))
+		{
+			CachedWeaponMesh = MeshComp;
+		}
+		else if (MeshComp->GetName() == TEXT("ShieldMesh"))
+		{
+			CachedShieldMesh = MeshComp;
+		}
+	}
 	
 	if (bIsAIControlled)
 	{
@@ -130,6 +145,7 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		if (IA_RightSlash)  EnhancedInput->BindAction(IA_RightSlash, ETriggerEvent::Started, this, &AEinherjarCharacter::OnRightSlash);
 		if (IA_Kick)          EnhancedInput->BindAction(IA_Kick, ETriggerEvent::Started, this, &AEinherjarCharacter::OnKick);
 		if (IA_AttackCancel)  EnhancedInput->BindAction(IA_AttackCancel, ETriggerEvent::Started, this, &AEinherjarCharacter::OnAttackCancel);
+		if (IA_ToggleWeapon)  EnhancedInput->BindAction(IA_ToggleWeapon, ETriggerEvent::Started, this, &AEinherjarCharacter::OnToggleWeapon);
 
 		if (IA_DefenseLeft)
 		{
@@ -265,6 +281,24 @@ void AEinherjarCharacter::OnAttackCancel()
 	CurrentCombatDirection = ECombatDirection::None;
 
 	ClearPendingDirections();
+}
+
+void AEinherjarCharacter::OnToggleWeapon()
+{
+	bWeaponDrawn = !bWeaponDrawn;
+
+	if (CachedWeaponMesh)
+	{
+		CachedWeaponMesh->SetVisibility(bWeaponDrawn, true);
+	}
+	if (CachedShieldMesh)
+	{
+		CachedShieldMesh->SetVisibility(bWeaponDrawn, true);
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("%s weapon %s"),
+		*GetName(),
+		bWeaponDrawn ? TEXT("DRAWN") : TEXT("SHEATHED"));
 }
 
 // ============================================================
