@@ -152,6 +152,11 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		if (IA_WeaponSlot2)  EnhancedInput->BindAction(IA_WeaponSlot2, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot2);
 		if (IA_WeaponSlot3)  EnhancedInput->BindAction(IA_WeaponSlot3, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot3);
 		if (IA_WeaponSlot4)  EnhancedInput->BindAction(IA_WeaponSlot4, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot4);
+		if (IA_WeaponSlot5)  EnhancedInput->BindAction(IA_WeaponSlot5, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot5);
+		if (IA_WeaponSlot6)  EnhancedInput->BindAction(IA_WeaponSlot6, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot6);
+		if (IA_WeaponSlot7)  EnhancedInput->BindAction(IA_WeaponSlot7, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot7);
+		if (IA_WeaponSlot8)  EnhancedInput->BindAction(IA_WeaponSlot8, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot8);
+		if (IA_WeaponSlot9)  EnhancedInput->BindAction(IA_WeaponSlot9, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot9);
 
 		if (IA_DefenseLeft)
 		{
@@ -374,6 +379,11 @@ void AEinherjarCharacter::OnWeaponSlot1() { SelectWeaponSlot(0); }
 void AEinherjarCharacter::OnWeaponSlot2() { SelectWeaponSlot(1); }
 void AEinherjarCharacter::OnWeaponSlot3() { SelectWeaponSlot(2); }
 void AEinherjarCharacter::OnWeaponSlot4() { SelectWeaponSlot(3); }
+void AEinherjarCharacter::OnWeaponSlot5() { SelectWeaponSlot(4); }
+void AEinherjarCharacter::OnWeaponSlot6() { SelectWeaponSlot(5); }
+void AEinherjarCharacter::OnWeaponSlot7() { SelectWeaponSlot(6); }
+void AEinherjarCharacter::OnWeaponSlot8() { SelectWeaponSlot(7); }
+void AEinherjarCharacter::OnWeaponSlot9() { SelectWeaponSlot(8); }
 
 // ============================================================
 // DEFENSES — HELD (KEYBOARD)

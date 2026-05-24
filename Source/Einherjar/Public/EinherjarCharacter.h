@@ -137,7 +137,22 @@ public:
 	UInputAction* IA_WeaponSlot3;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Weapon Slots")
-	UInputAction* IA_WeaponSlot4;	
+	UInputAction* IA_WeaponSlot4;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Weapon Slots")
+	UInputAction* IA_WeaponSlot5;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Weapon Slots")
+	UInputAction* IA_WeaponSlot6;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Weapon Slots")
+	UInputAction* IA_WeaponSlot7;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Weapon Slots")
+	UInputAction* IA_WeaponSlot8;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Weapon Slots")
+	UInputAction* IA_WeaponSlot9;
 
 	// ============================================================
 	// WEAPON / LOADOUT SYSTEM
@@ -346,6 +361,11 @@ protected:
 	void OnWeaponSlot2();
 	void OnWeaponSlot3();
 	void OnWeaponSlot4();
+	void OnWeaponSlot5();
+	void OnWeaponSlot6();
+	void OnWeaponSlot7();
+	void OnWeaponSlot8();
+	void OnWeaponSlot9();
 	void ResetCombatState();
 	void EndRecovery();
 	void EndStun();
