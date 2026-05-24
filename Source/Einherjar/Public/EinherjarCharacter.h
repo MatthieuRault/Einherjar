@@ -1,12 +1,10 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Engine/DataTable.h"
 #include "EinherjarCharacter.generated.h"
 
-// Forward declaration
 class UInputAction;
 class UInputComponent;
 
@@ -30,6 +28,48 @@ enum class ECombatAction : uint8
 	Defending    UMETA(DisplayName = "Defending"),
 	Recovering   UMETA(DisplayName = "Recovering"),
 	Stunned      UMETA(DisplayName = "Stunned")
+};
+
+USTRUCT(BlueprintType)
+struct FWeaponData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FString WeaponName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	UStaticMesh* WeaponMesh = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FVector WeaponLocation = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FRotator WeaponRotation = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FVector WeaponScale = FVector(1.0f, 1.0f, 1.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	bool bUsesShield = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	UStaticMesh* ShieldMesh = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FVector ShieldLocation = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FRotator ShieldRotation = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	FVector ShieldScale = FVector(1.0f, 1.0f, 1.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
+	bool bTwoHanded = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
+	float DamageMultiplier = 1.0f;
 };
 
 UCLASS()
@@ -86,6 +126,28 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Input")
 	UInputAction* IA_ToggleWeapon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Weapon Slots")
+	UInputAction* IA_WeaponSlot1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Weapon Slots")
+	UInputAction* IA_WeaponSlot2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Weapon Slots")
+	UInputAction* IA_WeaponSlot3;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat|Weapon Slots")
+	UInputAction* IA_WeaponSlot4;	
+
+	// ============================================================
+	// WEAPON / LOADOUT SYSTEM
+	// ============================================================
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	UDataTable* WeaponDataTable = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	FName DefaultWeaponRow = "Sword";
 
 	// ============================================================
 	// COMBAT — STATE
@@ -252,6 +314,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void PerformAttackTrace();
 
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void EquipWeapon(FName WeaponRowName);
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	void SelectWeaponSlot(int32 SlotIndex);
+
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	int32 GetCurrentWeaponIndex() const { return CurrentWeaponIndex; }
+
 protected:
 	// ============================================================
 	// COMBAT — HANDLERS
@@ -266,20 +337,24 @@ protected:
 	void OnDefenseRight();
 	void OnKick();
 	void OnAttackCancel();
-	void ResetCombatState();
-	void EndRecovery();
-	void EndStun();
 	void OnMouseAttackStarted();
 	void OnMouseAttackReleased();
 	void OnMouseDefenseStarted();
 	void OnMouseDefenseReleased();	
+	void OnToggleWeapon();
+	void OnWeaponSlot1();
+	void OnWeaponSlot2();
+	void OnWeaponSlot3();
+	void OnWeaponSlot4();
+	void ResetCombatState();
+	void EndRecovery();
+	void EndStun();
 	void ClearPendingDirections();
 	void ExecuteAttack(ECombatDirection Direction, bool bHeavy);
 	void StopDefending();	
 	void AIMakeDecision();	
 	void AIScheduleNextDecision();
 	void AIStopBlocking();
-	void OnToggleWeapon();
 
 private:
 	FTimerHandle CombatStateResetTimerHandle;
@@ -290,7 +365,7 @@ private:
 	FTimerHandle AIBlockTimerHandle;
 
 	bool bIsHoldingKeyboardDefense = false;
-
+	int32 CurrentWeaponIndex = 0;
 	float LastStaminaUseTime = 0.0f;
 
 	UPROPERTY()

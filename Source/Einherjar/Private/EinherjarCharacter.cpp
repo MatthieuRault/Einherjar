@@ -44,6 +44,8 @@ void AEinherjarCharacter::BeginPlay()
 			CachedShieldMesh = MeshComp;
 		}
 	}
+
+	EquipWeapon(DefaultWeaponRow);
 	
 	if (bIsAIControlled)
 	{
@@ -146,6 +148,10 @@ void AEinherjarCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		if (IA_Kick)          EnhancedInput->BindAction(IA_Kick, ETriggerEvent::Started, this, &AEinherjarCharacter::OnKick);
 		if (IA_AttackCancel)  EnhancedInput->BindAction(IA_AttackCancel, ETriggerEvent::Started, this, &AEinherjarCharacter::OnAttackCancel);
 		if (IA_ToggleWeapon)  EnhancedInput->BindAction(IA_ToggleWeapon, ETriggerEvent::Started, this, &AEinherjarCharacter::OnToggleWeapon);
+		if (IA_WeaponSlot1)  EnhancedInput->BindAction(IA_WeaponSlot1, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot1);
+		if (IA_WeaponSlot2)  EnhancedInput->BindAction(IA_WeaponSlot2, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot2);
+		if (IA_WeaponSlot3)  EnhancedInput->BindAction(IA_WeaponSlot3, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot3);
+		if (IA_WeaponSlot4)  EnhancedInput->BindAction(IA_WeaponSlot4, ETriggerEvent::Started, this, &AEinherjarCharacter::OnWeaponSlot4);
 
 		if (IA_DefenseLeft)
 		{
@@ -300,6 +306,74 @@ void AEinherjarCharacter::OnToggleWeapon()
 		*GetName(),
 		bWeaponDrawn ? TEXT("DRAWN") : TEXT("SHEATHED"));
 }
+
+// ============================================================
+// WEAPON / LOADOUT SYSTEM
+// ============================================================
+
+void AEinherjarCharacter::EquipWeapon(FName WeaponRowName)
+{
+	if (!WeaponDataTable)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquipWeapon failed: no WeaponDataTable assigned"));
+		return;
+	}
+
+	const FString Context = TEXT("EquipWeapon");
+	FWeaponData* WeaponRow = WeaponDataTable->FindRow<FWeaponData>(WeaponRowName, Context);
+
+	if (!WeaponRow)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquipWeapon failed: row '%s' not found"), *WeaponRowName.ToString());
+		return;
+	}
+
+	if (CachedWeaponMesh)
+	{
+		CachedWeaponMesh->SetStaticMesh(WeaponRow->WeaponMesh);
+		CachedWeaponMesh->SetRelativeLocation(WeaponRow->WeaponLocation);
+		CachedWeaponMesh->SetRelativeRotation(WeaponRow->WeaponRotation);
+		CachedWeaponMesh->SetRelativeScale3D(WeaponRow->WeaponScale);
+	}
+
+	if (CachedShieldMesh)
+	{
+		if (WeaponRow->bUsesShield && WeaponRow->ShieldMesh)
+		{
+			CachedShieldMesh->SetStaticMesh(WeaponRow->ShieldMesh);
+			CachedShieldMesh->SetRelativeLocation(WeaponRow->ShieldLocation);
+			CachedShieldMesh->SetRelativeRotation(WeaponRow->ShieldRotation);
+			CachedShieldMesh->SetRelativeScale3D(WeaponRow->ShieldScale);
+			CachedShieldMesh->SetVisibility(true, true);
+		}
+		else
+		{
+			CachedShieldMesh->SetVisibility(false, true);
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("%s equipped weapon: %s"), *GetName(), *WeaponRow->WeaponName);
+}
+
+void AEinherjarCharacter::SelectWeaponSlot(int32 SlotIndex)
+{
+	if (!WeaponDataTable) return;
+
+	TArray<FName> RowNames = WeaponDataTable->GetRowNames();
+	if (!RowNames.IsValidIndex(SlotIndex))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SelectWeaponSlot: slot %d invalid (only %d weapons)"), SlotIndex, RowNames.Num());
+		return;
+	}
+
+	CurrentWeaponIndex = SlotIndex;
+	EquipWeapon(RowNames[SlotIndex]);
+}
+
+void AEinherjarCharacter::OnWeaponSlot1() { SelectWeaponSlot(0); }
+void AEinherjarCharacter::OnWeaponSlot2() { SelectWeaponSlot(1); }
+void AEinherjarCharacter::OnWeaponSlot3() { SelectWeaponSlot(2); }
+void AEinherjarCharacter::OnWeaponSlot4() { SelectWeaponSlot(3); }
 
 // ============================================================
 // DEFENSES — HELD (KEYBOARD)
