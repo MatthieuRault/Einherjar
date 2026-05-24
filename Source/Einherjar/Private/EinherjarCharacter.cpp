@@ -737,10 +737,7 @@ void AEinherjarCharacter::ExecuteAttack(ECombatDirection Direction, bool bHeavy)
 		*UEnum::GetValueAsString(Direction));
 
 	const float Duration = bHeavy ? AttackDuration * 1.5f : AttackDuration;
-	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, Duration, false);
-
-	const float HitDelay = bHeavy ? AttackHitDelay * 1.5f : AttackHitDelay;
-	GetWorldTimerManager().SetTimer(AttackHitTimerHandle, this, &AEinherjarCharacter::PerformAttackTrace, HitDelay, false);
+	GetWorldTimerManager().SetTimer(CombatStateResetTimerHandle, this, &AEinherjarCharacter::ResetCombatState, Duration, false);	
 
 	PendingAttackDirection = ECombatDirection::None;
 }
